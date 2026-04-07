@@ -16,14 +16,14 @@ export default function Remedies() {
   const [details, setDetails] = useState({});
 
   const fetchRemedies = async (query = "") => {
-    const url = query ? `${BASE_URL}?search=${query}` : BASE_URL;
+    const url = query ? `${BASE_URL}/remedies?search=${query}` : `${BASE_URL}/remedies`;
     const res = await fetch(url);
     const json = await res.json();
     setData(json);
   };
 
   const fetchDetails = async (id) => {
-    const res = await fetch(`${BASE_URL}/${id}`);
+    const res = await fetch(`${BASE_URL}/remedies/${id}`);
     const json = await res.json();
     setDetails((prev) => ({ ...prev, [id]: json }));
   };
