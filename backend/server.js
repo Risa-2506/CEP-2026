@@ -22,7 +22,10 @@ app.use("/remedies", remedyRoutes);
 app.use("/alzheimer", alzheimerRoutes);
 app.use("/elderly", elderlyRoutes);
 app.use("/auth", authRoutes);
-
-app.listen(process.env.PORT, () => {
-    console.log(`Server running on port ${process.env.PORT}`);
+const elderlyRoutes = require("./routes/ElderlyRoutes");
+app.use("/remedies", remedyRoutes);
+app.use("/elderly", elderlyRoutes);
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
