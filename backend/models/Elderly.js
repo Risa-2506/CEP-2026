@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const alzheimerSchema = new mongoose.Schema({
+const elderlySchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
@@ -30,4 +30,4 @@ const alzheimerSchema = new mongoose.Schema({
   }],
 }, { timestamps: true });
 
-module.exports = mongoose.model("Alzheimer", alzheimerSchema);
+module.exports = mongoose.model("Elderly", elderlySchema);

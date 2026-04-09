@@ -1,10 +1,27 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { useRouter } from "expo-router";
 
 export default function Doctors() {
+  const router = useRouter();
+
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Doctors Screen (Coming Soon)</Text>
+      <View style={styles.card}>
+        <Text style={styles.icon}>🩺</Text>
+        <Text style={styles.title}>Find Doctors</Text>
+        <Text style={styles.sub}>Search by specialization</Text>
+        <View style={styles.divider} />
+        <Text style={styles.comingSoon}>🔧 Coming Soon</Text>
+        <Text style={styles.desc}>
+          This feature is under development. You'll be able to search
+          for doctors by specialization, location, and availability.
+        </Text>
+      </View>
+
+      <TouchableOpacity style={styles.backBtn} onPress={() => router.replace("/")}>
+        <Text style={styles.backText}>← Home</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -12,11 +29,26 @@ export default function Doctors() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#0F172A",
     justifyContent: "center",
     alignItems: "center",
+    padding: 20,
   },
-  text: {
-    fontSize: 20,
-    fontWeight: "bold",
+  card: {
+    backgroundColor: "#1E293B",
+    borderRadius: 20,
+    padding: 30,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#334155",
+    width: "100%",
   },
+  icon: { fontSize: 48, marginBottom: 12 },
+  title: { fontSize: 24, fontWeight: "800", color: "#F1F5F9" },
+  sub: { color: "#64748B", fontSize: 14, marginTop: 4 },
+  divider: { height: 1, backgroundColor: "#334155", width: "100%", marginVertical: 20 },
+  comingSoon: { fontSize: 18, fontWeight: "700", color: "#60A5FA", marginBottom: 8 },
+  desc: { color: "#94A3B8", textAlign: "center", fontSize: 13, lineHeight: 20 },
+  backBtn: { marginTop: 24, paddingVertical: 12, paddingHorizontal: 24, backgroundColor: "#334155", borderRadius: 12 },
+  backText: { color: "#E2E8F0", fontWeight: "600", fontSize: 14 },
 });

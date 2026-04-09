@@ -1,13 +1,13 @@
 const express = require("express");
 const router = express.Router();
-const Alzheimer = require("../models/Alzheimer");
+const Elderly = require("../models/Elderly");
 const User = require("../models/User");
 const authMiddleware = require("../middleware/authMiddleware");
 
 // CHECK if logged-in user has a patient profile
 router.get("/check", authMiddleware, async (req, res) => {
   try {
-    const profile = await Alzheimer.findOne({ userId: req.user._id });
+    const profile = await Elderly.findOne({ userId: req.user._id });
     res.json({ hasProfile: !!profile, profile: profile || null });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -17,9 +17,9 @@ router.get("/check", authMiddleware, async (req, res) => {
 // GET logged-in user's patient profile
 router.get("/my-profile", authMiddleware, async (req, res) => {
   try {
-    const profile = await Alzheimer.findOne({ userId: req.user._id });
+    const profile = await Elderly.findOne({ userId: req.user._id });
     if (!profile) {
-      return res.status(404).json({ message: "No patient profile found" });
+      return res.status(404).json({ message: "No elderly profile found" });
     }
     res.json(profile);
   } catch (error) {
@@ -33,12 +33,12 @@ router.post("/", authMiddleware, async (req, res) => {
     const { patientName, age, caregiver, guardians, emergencyContacts } = req.body;
 
     // Check if user already has a profile
-    const existing = await Alzheimer.findOne({ userId: req.user._id });
+    const existing = await Elderly.findOne({ userId: req.user._id });
     if (existing) {
-      return res.status(400).json({ message: "Patient profile already exists" });
+      return res.status(400).json({ message: "Elderly profile already exists" });
     }
 
-    const newData = await Alzheimer.create({
+    const newData = await Elderly.create({
       userId: req.user._id,
       patientName,
       age,
