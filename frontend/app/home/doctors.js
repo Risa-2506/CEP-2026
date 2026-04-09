@@ -14,7 +14,7 @@ export default function Doctors() {
         <View style={styles.divider} />
         <Text style={styles.comingSoon}>🔧 Coming Soon</Text>
         <Text style={styles.desc}>
-          This feature is under development. You'll be able to search
+          This feature is under development. Youll be able to search
           for doctors by specialization, location, and availability.
         </Text>
       </View>
