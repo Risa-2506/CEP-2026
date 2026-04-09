@@ -20,11 +20,16 @@ const elderlyRoutes = require("./routes/elderly");
 
 app.use("/remedies", remedyRoutes);
 app.use("/alzheimer", alzheimerRoutes);
-app.use("/elderly", elderlyRoutes);
 app.use("/auth", authRoutes);
-const elderlyRoutes = require("./routes/ElderlyRoutes");
-app.use("/remedies", remedyRoutes);
-app.use("/elderly", elderlyRoutes);
+
+// Elderly Routes
+const elderlyProfileRoutes = require("./routes/elderly");
+const elderlyFeatureRoutes = require("./routes/ElderlyRoutes");
+
+// Both routers handle endpoints under /elderly
+app.use("/elderly", elderlyProfileRoutes);
+app.use("/elderly", elderlyFeatureRoutes);
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

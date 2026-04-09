@@ -150,7 +150,11 @@ export default function Home() {
     } else if (user?.role === "guardian") {
       router.push("home/guardianDashboard");
     } else if (user?.role === "patient") {
-      router.push("home/alzheimerDashboard");
+      if (user?.linkedPatientType === "elderly") {
+        router.push("home/elderlyDashboard");
+      } else {
+        router.push("home/alzheimerDashboard");
+      }
     }
   };
 

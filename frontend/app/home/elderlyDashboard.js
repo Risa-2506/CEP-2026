@@ -7,6 +7,14 @@ export default function ElderlyDashboard() {
   const router = useRouter();
   const { user } = useAuth();
 
+  const dashboardItems = [
+    { icon: "📝", title: "Notes / Tasks", sub: "Daily notes & tasks", color: "#1E40AF", tab: "notepad" },
+    { icon: "📞", title: "Contacts", sub: "Important people", color: "#2563EB", tab: "contacts" },
+    { icon: "🧠", title: "Memory Lane", sub: "Cherished moments", color: "#7C3AED", tab: "memory" },
+    { icon: "🌟", title: "Daily Inspiration", sub: "Motivating stories", color: "#D97706", tab: "inspirational" },
+    { icon: "📍", title: "Nearby Places", sub: "Find parks & centers", color: "#059669", tab: "places" },
+  ];
+
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -20,13 +28,31 @@ export default function ElderlyDashboard() {
           <Text style={styles.headerSub}>Welcome, {user?.name || "Patient"}</Text>
         </View>
 
-        {/* Coming Soon Section */}
-        <View style={styles.soonCard}>
-          <Text style={styles.soonIcon}>🚀</Text>
-          <Text style={styles.soonTitle}>Features Coming Soon</Text>
-          <Text style={styles.soonText}>
-            We are working on bringing specialized features for elderly care, including medicine tracking, fall detection, and daily routine management.
-          </Text>
+        {/* Emergency Button */}
+        <TouchableOpacity style={styles.emergencyBtn} activeOpacity={0.7}>
+          <Text style={styles.emergencyIcon}>🚨</Text>
+          <View>
+            <Text style={styles.emergencyTitle}>Emergency Alerts</Text>
+            <Text style={styles.emergencySub}>Tap to alert caregiver & guardians</Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* Dashboard Cards */}
+        <View style={styles.grid}>
+          {dashboardItems.map((item, i) => (
+            <TouchableOpacity 
+              key={i} 
+              style={styles.card} 
+              activeOpacity={0.8}
+              onPress={() => router.push({ pathname: "/elderly", params: { tab: item.tab } })}
+            >
+              <View style={[styles.cardIconBox, { backgroundColor: item.color }]}>
+                <Text style={styles.cardIcon}>{item.icon}</Text>
+              </View>
+              <Text style={styles.cardTitle}>{item.title}</Text>
+              <Text style={styles.cardSub}>{item.sub}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
 
         <View style={{ height: 30 }} />
@@ -73,31 +99,69 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 4,
   },
-  soonCard: {
-    backgroundColor: "#1E293B",
+  emergencyBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#991B1B",
     marginHorizontal: 16,
-    marginTop: 40,
-    padding: 30,
-    borderRadius: 20,
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#EF4444",
+    gap: 14,
+  },
+  emergencyIcon: {
+    fontSize: 32,
+  },
+  emergencyTitle: {
+    color: "#FCA5A5",
+    fontSize: 18,
+    fontWeight: "800",
+  },
+  emergencySub: {
+    color: "#FECACA",
+    fontSize: 12,
+    marginTop: 2,
+  },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    marginTop: 16,
+  },
+  card: {
+    backgroundColor: "#1E293B",
+    borderRadius: 16,
+    padding: 18,
+    width: "48%",
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: "#334155",
     alignItems: "center",
-    borderStyle: "dashed",
   },
-  soonIcon: {
-    fontSize: 48,
-    marginBottom: 16,
-  },
-  soonTitle: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#F1F5F9",
+  cardIconBox: {
+    width: 50,
+    height: 50,
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 10,
   },
-  soonText: {
-    fontSize: 14,
-    color: "#94A3B8",
+  cardIcon: {
+    fontSize: 24,
+  },
+  cardTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#F1F5F9",
     textAlign: "center",
-    lineHeight: 22,
+  },
+  cardSub: {
+    color: "#64748B",
+    fontSize: 12,
+    marginTop: 4,
+    textAlign: "center",
   },
 });

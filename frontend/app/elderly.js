@@ -1,16 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View
-} from "react-native";
-import Swiper from "react-native-deck-swiper"; // ✅ ADDED
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, SafeAreaView, Platform, StatusBar } from "react-native";
+import Swiper from "react-native-deck-swiper";
 import { elderlyAPI } from "../services/api";
+import { useLocalSearchParams, useRouter } from "expo-router";
 
 // Demo stories used when database is empty
 const DEMO_STORIES = [
@@ -81,7 +73,9 @@ const Input = (props) => (
 );
 
 export default function Elderly() {
-  const [activeTab, setActiveTab] = useState("notepad");
+  const params = useLocalSearchParams();
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState(params.tab || "notepad");
   const [loading, setLoading] = useState(true);
   const [selectedStory, setSelectedStory] = useState(null);
 
@@ -480,11 +474,17 @@ export default function Elderly() {
   }, [activeTab, notes, contacts, memories, places, inspirationals, forms, selectedStory]);
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>ElderCare</Text>
-        <Text style={styles.headerSub}>Health • Comfort • Care</Text>
-      </View>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView style={styles.container}>
+        <View style={styles.header}>
+          <Pressable onPress={() => router.back()} style={styles.backButton}>
+            <Text style={styles.backButtonIcon}>←</Text>
+          </Pressable>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.headerTitle}>ElderCare</Text>
+            <Text style={styles.headerSub}>Health • Comfort • Care</Text>
+          </View>
+        </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabs}>
         {TABS.map((tab) => (
@@ -511,11 +511,17 @@ export default function Elderly() {
       ) : (
         <View style={{ marginTop: 10 }}>{content}</View>
       )}
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.bg,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.bg,
@@ -525,7 +531,23 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     padding: 20,
     borderRadius: 20,
-    marginBottom: 16
+    marginBottom: 16,
+    flexDirection: "row",
+    alignItems: "center"
+  },
+  backButton: {
+    marginRight: 15,
+    padding: 8,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 12
+  },
+  backButtonIcon: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "bold"
+  },
+  headerTextContainer: {
+    flex: 1
   },
   headerTitle: {
     color: "#fff",

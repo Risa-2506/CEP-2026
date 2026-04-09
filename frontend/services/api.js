@@ -1,7 +1,7 @@
 // ================= CONFIG =================
 
 // 🔥 PUT YOUR LOCAL IP HERE (IMPORTANT)
-const LOCAL_IP = "192.168.0.101"; // ← CHANGE THIS
+const LOCAL_IP = "192.168.1.33"; // Updated to match Expo IP
 
 const configuredBase = (process.env.EXPO_PUBLIC_API_URL || "").replace(/\/$/, "");
 
