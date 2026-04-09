@@ -10,6 +10,8 @@ connectDB();
 app.use(express.json());
 const remedyRoutes = require("./routes/RemedyRoutes");
 app.use("/remedies", remedyRoutes);
-app.listen(process.env.PORT, () => {
+const doctorRoutes = require ("./routes/doctorRoutes");
+app.use("/doctors", doctorRoutes);
+app.listen(process.env.PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${process.env.PORT}`);
 });

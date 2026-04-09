@@ -7,25 +7,40 @@ import {
   TouchableOpacity,
   StyleSheet
 } from "react-native";
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://10.227.184.79:5000";
 
 export default function Remedies() {
   const [data, setData] = useState([]);
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState(null);
   const [details, setDetails] = useState({});
+  const [error, setError] = useState("");
 
   const fetchRemedies = async (query = "") => {
-    const url = query ? `${BASE_URL}/remedies?search=${query}` : `${BASE_URL}/remedies`;
-    const res = await fetch(url);
-    const json = await res.json();
-    setData(json);
+    try {
+      const url = query ? `${BASE_URL}/remedies?search=${query}` : `${BASE_URL}/remedies`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
+      const json = await res.json();
+      setData(Array.isArray(json) ? json : []);
+      setError("");
+    } catch (err) {
+      console.error("Fetch remedies failed", err);
+      setError("Unable to load remedies. Check backend URL or network.");
+      setData([]);
+    }
   };
 
   const fetchDetails = async (id) => {
-    const res = await fetch(`${BASE_URL}/remedies/${id}`);
-    const json = await res.json();
-    setDetails((prev) => ({ ...prev, [id]: json }));
+    try {
+      const res = await fetch(`${BASE_URL}/remedies/${id}`);
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
+      const json = await res.json();
+      setDetails((prev) => ({ ...prev, [id]: json }));
+    } catch (err) {
+      console.error("Fetch remedy details failed", err);
+      setError("Unable to load remedy details. Please try again.");
+    }
   };
 
   useEffect(() => {
@@ -109,11 +124,20 @@ export default function Remedies() {
         </Text>
       </View>
 
+      {error ? (
+        <View style={styles.errorBox}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      ) : null}
+
       {/* List */}
       <FlatList
         data={data}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
+        ListEmptyComponent={() => (
+          <Text style={styles.emptyText}>No remedies available yet.</Text>
+        )}
       />
     </View>
   );
@@ -222,5 +246,22 @@ const styles = StyleSheet.create({
 
   remedyText: {
     flex: 1
+  },
+
+  errorBox: {
+    backgroundColor: "#fee2e2",
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 15
+  },
+
+  errorText: {
+    color: "#991b1b"
+  },
+
+  emptyText: {
+    color: "#555",
+    textAlign: "center",
+    marginTop: 20
   }
 });

@@ -4,6 +4,7 @@ const connectDB = require("./config/db");
 
 
 const Remedy = require("./models/Remedy.model");
+const Doctor = require("./models/Doctor");
 
 const data = [
     {
@@ -112,6 +113,29 @@ const data = [
 
 ];
 
+const doctorsData = [
+  { name: "Dr. Asha Patil", specialty: "Cardiologist", location: "Mumbai", contact: "9000000001", email: "asha.patil@example.com" },
+  { name: "Dr. Rajesh Kumar", specialty: "Neurologist", location: "Delhi", contact: "9000000002", email: "rajesh.kumar@example.com" },
+  { name: "Dr. Sneha Joshi", specialty: "Dermatologist", location: "Pune", contact: "9000000003", email: "sneha.joshi@example.com" },
+  { name: "Dr. Amit Sharma", specialty: "Orthopedic", location: "Jaipur", contact: "9000000004", email: "amit.sharma@example.com" },
+  { name: "Dr. Priya Nair", specialty: "Pediatrician", location: "Kochi", contact: "9000000005", email: "priya.nair@example.com" },
+  { name: "Dr. Karan Mehta", specialty: "Dentist", location: "Ahmedabad", contact: "9000000006", email: "karan.mehta@example.com" },
+  { name: "Dr. Neha Gupta", specialty: "Gynecologist", location: "Chandigarh", contact: "9000000007", email: "neha.gupta@example.com" },
+  { name: "Dr. Rohit Verma", specialty: "ENT", location: "Lucknow", contact: "9000000008", email: "rohit.verma@example.com" },
+  { name: "Dr. Pooja Singh", specialty: "Psychiatrist", location: "Bhopal", contact: "9000000009", email: "pooja.singh@example.com" },
+  { name: "Dr. Vikram Reddy", specialty: "Oncologist", location: "Hyderabad", contact: "9000000010", email: "vikram.reddy@example.com" },
+  { name: "Dr. Meena Iyer", specialty: "Endocrinologist", location: "Chennai", contact: "9000000011", email: "meena.iyer@example.com" },
+  { name: "Dr. Anil Deshmukh", specialty: "General Physician", location: "Nagpur", contact: "9000000012", email: "anil.deshmukh@example.com" },
+  { name: "Dr. Kavita Shah", specialty: "Ophthalmologist", location: "Surat", contact: "9000000013", email: "kavita.shah@example.com" },
+  { name: "Dr. Sanjay Kulkarni", specialty: "Urologist", location: "Pune", contact: "9000000014", email: "sanjay.kulkarni@example.com" },
+  { name: "Dr. Ritu Malhotra", specialty: "Radiologist", location: "Delhi", contact: "9000000015", email: "ritu.malhotra@example.com" },
+  { name: "Dr. Deepak Yadav", specialty: "Pulmonologist", location: "Gurgaon", contact: "9000000016", email: "deepak.yadav@example.com" },
+  { name: "Dr. Shalini Menon", specialty: "Pathologist", location: "Bengaluru", contact: "9000000017", email: "shalini.menon@example.com" },
+  { name: "Dr. Harish Chandra", specialty: "Gastroenterologist", location: "Varanasi", contact: "9000000018", email: "harish.chandra@example.com" },
+  { name: "Dr. Nikhil Bansal", specialty: "Nephrologist", location: "Noida", contact: "9000000019", email: "nikhil.bansal@example.com" },
+  { name: "Dr. Swati Agarwal", specialty: "Anesthesiologist", location: "Indore", contact: "9000000020", email: "swati.agarwal@example.com" }
+];
+
 
 const seedData = async () => {
     try {
@@ -123,6 +147,11 @@ const seedData = async () => {
         await Remedy.insertMany(data);
         console.log("Data inserted");
 
+        await Doctor.deleteMany();
+        console.log("Old doctor data removed");
+        await Doctor.insertMany(doctorsData);
+        console.log("Doctors data inserted");
+
         process.exit();
     } catch (error) {
         console.error(error);
@@ -131,3 +160,4 @@ const seedData = async () => {
 };
 
 seedData();
+
