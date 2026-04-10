@@ -129,6 +129,10 @@ export default function Remedies() {
           <Text style={styles.errorText}>{error}</Text>
         </View>
       ) : null}
+      <View style={styles.urlBox}>
+        <Text style={styles.urlLabel}>Connected API URL</Text>
+        <Text style={styles.urlValue}>{BASE_URL || "Not set"}</Text>
+      </View>
 
       {/* List */}
       <FlatList
@@ -180,6 +184,26 @@ const styles = StyleSheet.create({
   },
   infoText: {
     color: "#166534"
+  },
+
+  urlBox: {
+    backgroundColor: "#EFF6FF",
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: "#BFDBFE"
+  },
+  urlLabel: {
+    color: "#1D4ED8",
+    fontSize: 12,
+    fontWeight: "700",
+    marginBottom: 4,
+    textTransform: "uppercase"
+  },
+  urlValue: {
+    color: "#1E3A8A",
+    fontWeight: "600"
   },
 
   card: {
