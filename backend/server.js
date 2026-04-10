@@ -13,6 +13,8 @@ app.use(express.json());
 const remedyRoutes = require("./routes/RemedyRoutes");
 const elderlyRoutes = require("./routes/ElderlyRoutes");
 app.use("/remedies", remedyRoutes);
+const doctorRoutes = require ("./routes/doctorRoutes");
+app.use("/doctors", doctorRoutes);
 app.use("/elderly", elderlyRoutes);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
