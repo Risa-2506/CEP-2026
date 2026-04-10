@@ -1,3 +1,4 @@
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://10.227.184.79:5000/remedies";
 // ================= CONFIG =================
 
 // 🔥 PUT YOUR LOCAL IP HERE (IMPORTANT)

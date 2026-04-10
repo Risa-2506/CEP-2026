@@ -16,7 +16,6 @@ app.use(express.json());
 const remedyRoutes = require("./routes/RemedyRoutes");
 const alzheimerRoutes = require("./routes/alzheimer");
 const authRoutes = require("./routes/auth");
-const elderlyRoutes = require("./routes/elderly");
 
 app.use("/remedies", remedyRoutes);
 app.use("/alzheimer", alzheimerRoutes);
@@ -30,6 +29,8 @@ const elderlyFeatureRoutes = require("./routes/ElderlyRoutes");
 app.use("/elderly", elderlyProfileRoutes);
 app.use("/elderly", elderlyFeatureRoutes);
 
+const doctorRoutes = require ("./routes/doctorRoutes");
+app.use("/doctors", doctorRoutes);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
