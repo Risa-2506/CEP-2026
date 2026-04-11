@@ -15,6 +15,7 @@ const PLACE_CATEGORIES = [
 
 const noteSchema = new mongoose.Schema(
     {
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
         title: { type: String, required: true, trim: true, maxlength: 200 },
         content: { type: String, required: true, trim: true, maxlength: 5000 }
     },
@@ -23,6 +24,7 @@ const noteSchema = new mongoose.Schema(
 
 const contactSchema = new mongoose.Schema(
     {
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
         name: { type: String, required: true, trim: true, maxlength: 120 },
         relation: { type: String, trim: true, maxlength: 80, default: "Family" },
         phone: { type: String, required: true, trim: true, maxlength: 30 },
@@ -33,6 +35,7 @@ const contactSchema = new mongoose.Schema(
 
 const memorySchema = new mongoose.Schema(
     {
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
         title: { type: String, required: true, trim: true, maxlength: 200 },
         story: { type: String, required: true, trim: true, maxlength: 10000 },
         memoryDate: { type: Date },

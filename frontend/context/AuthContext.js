@@ -1,4 +1,5 @@
-import React, { createContext, useState, useContext } from "react";
+import React, { createContext, useState, useContext, useEffect } from "react";
+import { setGlobalToken } from "../services/api";
 
 const AuthContext = createContext();
 
@@ -13,6 +14,10 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setGlobalToken(token);
+  }, [token]);
 
   const isLoggedIn = !!user && !!token;
 

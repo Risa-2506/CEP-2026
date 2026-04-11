@@ -6,6 +6,10 @@
 const express = require("express");
 const router = express.Router();
 const ctrl = require("../controllers/Elderly.controller");
+const authMiddleware = require("../middleware/authMiddleware");
+
+// Protect all elderly feature routes
+router.use(authMiddleware);
 
 // ─── 1. Notepad ──────────────────────────────────────────────
 // GET    /api/elderly/notepad        → get all notes

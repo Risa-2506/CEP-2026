@@ -40,13 +40,19 @@ const safeJson = async (res) => {
 };
 
 
+let globalAuthToken = null;
+
+export const setGlobalToken = (token) => {
+    globalAuthToken = token;
+};
+
 // ================= CORE REQUEST =================
 
-const request = async (method, path, body = null, token = null) => {
+const request = async (method, path, body = null) => {
     const headers = { "Content-Type": "application/json" };
 
-    if (token) {
-        headers.Authorization = `Bearer ${token}`;
+    if (globalAuthToken) {
+        headers.Authorization = `Bearer ${globalAuthToken}`;
     }
 
     const options = { method, headers };

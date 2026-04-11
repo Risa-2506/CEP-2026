@@ -15,9 +15,9 @@ const fail = (res, message = "Server error", status = 500) =>
 
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-exports.getNotes = async (_req, res) => {
+exports.getNotes = async (req, res) => {
     try {
-        const notes = await ElderlyNote.find({}).sort({ createdAt: -1 });
+        const notes = await ElderlyNote.find({ userId: req.user._id }).sort({ createdAt: -1 });
         return ok(res, notes);
     } catch (error) {
         return fail(res, error.message);
@@ -30,7 +30,7 @@ exports.createNote = async (req, res) => {
         if (!title?.trim() || !content?.trim()) {
             return fail(res, "Title and content are required.", 400);
         }
-        const note = await ElderlyNote.create({ title, content });
+        const note = await ElderlyNote.create({ userId: req.user._id, title, content });
         return ok(res, note, "Note created", 201);
     } catch (error) {
         return fail(res, error.message);
@@ -40,8 +40,8 @@ exports.createNote = async (req, res) => {
 exports.updateNote = async (req, res) => {
     try {
         const { title, content } = req.body;
-        const note = await ElderlyNote.findByIdAndUpdate(
-            req.params.id,
+        const note = await ElderlyNote.findOneAndUpdate(
+            { _id: req.params.id, userId: req.user._id },
             { title, content },
             { new: true, runValidators: true }
         );
@@ -56,7 +56,7 @@ exports.updateNote = async (req, res) => {
 
 exports.deleteNote = async (req, res) => {
     try {
-        const note = await ElderlyNote.findByIdAndDelete(req.params.id);
+        const note = await ElderlyNote.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
         if (!note) {
             return fail(res, "Note not found.", 404);
         }
@@ -66,9 +66,9 @@ exports.deleteNote = async (req, res) => {
     }
 };
 
-exports.getContacts = async (_req, res) => {
+exports.getContacts = async (req, res) => {
     try {
-        const contacts = await ElderlyContact.find({}).sort({ name: 1 });
+        const contacts = await ElderlyContact.find({ userId: req.user._id }).sort({ name: 1 });
         return ok(res, contacts);
     } catch (error) {
         return fail(res, error.message);
@@ -81,7 +81,7 @@ exports.createContact = async (req, res) => {
         if (!name?.trim() || !phone?.trim()) {
             return fail(res, "Name and phone are required.", 400);
         }
-        const contact = await ElderlyContact.create({ name, relation, phone, notes });
+        const contact = await ElderlyContact.create({ userId: req.user._id, name, relation, phone, notes });
         return ok(res, contact, "Contact added", 201);
     } catch (error) {
         return fail(res, error.message);
@@ -90,10 +90,11 @@ exports.createContact = async (req, res) => {
 
 exports.updateContact = async (req, res) => {
     try {
-        const contact = await ElderlyContact.findByIdAndUpdate(req.params.id, req.body, {
-            new: true,
-            runValidators: true
-        });
+        const contact = await ElderlyContact.findOneAndUpdate(
+            { _id: req.params.id, userId: req.user._id },
+            req.body,
+            { new: true, runValidators: true }
+        );
         if (!contact) {
             return fail(res, "Contact not found.", 404);
         }
@@ -105,7 +106,7 @@ exports.updateContact = async (req, res) => {
 
 exports.deleteContact = async (req, res) => {
     try {
-        const contact = await ElderlyContact.findByIdAndDelete(req.params.id);
+        const contact = await ElderlyContact.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
         if (!contact) {
             return fail(res, "Contact not found.", 404);
         }
@@ -115,9 +116,9 @@ exports.deleteContact = async (req, res) => {
     }
 };
 
-exports.getMemories = async (_req, res) => {
+exports.getMemories = async (req, res) => {
     try {
-        const memories = await ElderlyMemory.find({}).sort({ memoryDate: -1, createdAt: -1 });
+        const memories = await ElderlyMemory.find({ userId: req.user._id }).sort({ memoryDate: -1, createdAt: -1 });
         return ok(res, memories);
     } catch (error) {
         return fail(res, error.message);
@@ -130,7 +131,7 @@ exports.createMemory = async (req, res) => {
         if (!title?.trim() || !story?.trim()) {
             return fail(res, "Title and story are required.", 400);
         }
-        const memory = await ElderlyMemory.create(req.body);
+        const memory = await ElderlyMemory.create({ ...req.body, userId: req.user._id });
         return ok(res, memory, "Memory saved", 201);
     } catch (error) {
         return fail(res, error.message);
@@ -139,10 +140,11 @@ exports.createMemory = async (req, res) => {
 
 exports.updateMemory = async (req, res) => {
     try {
-        const memory = await ElderlyMemory.findByIdAndUpdate(req.params.id, req.body, {
-            new: true,
-            runValidators: true
-        });
+        const memory = await ElderlyMemory.findOneAndUpdate(
+            { _id: req.params.id, userId: req.user._id },
+            req.body,
+            { new: true, runValidators: true }
+        );
         if (!memory) {
             return fail(res, "Memory not found.", 404);
         }
@@ -154,7 +156,7 @@ exports.updateMemory = async (req, res) => {
 
 exports.deleteMemory = async (req, res) => {
     try {
-        const memory = await ElderlyMemory.findByIdAndDelete(req.params.id);
+        const memory = await ElderlyMemory.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
         if (!memory) {
             return fail(res, "Memory not found.", 404);
         }
