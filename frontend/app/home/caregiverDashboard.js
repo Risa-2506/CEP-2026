@@ -35,7 +35,7 @@ export default function CaregiverDashboard() {
           <Text style={s.soonIcon}>🚧</Text>
           <Text style={s.soonTitle}>Caregiver Features Coming Soon</Text>
           <Text style={s.soonText}>
-            We are building tools for you to track {user?.linkedPatientName || "your patient"}'s health, location, and daily activities in real-time.
+            We are building tools for you to track {user?.linkedPatientName || "your patient"}s health, location, and daily activities in real-time.
           </Text>
         </View>
 

@@ -174,7 +174,7 @@ export default function Login() {
             onPress={() => router.push({ pathname: "/auth/signup", params: { redirectTo: params.redirectTo || "" } })}
           >
             <Text style={styles.signupLink}>
-              Don't have an account? <Text style={styles.signupLinkBold}>Sign Up</Text>
+              Dont have an account? <Text style={styles.signupLinkBold}>Sign Up</Text>
             </Text>
           </TouchableOpacity>
         </Animated.View>

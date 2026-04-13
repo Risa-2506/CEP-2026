@@ -1,0 +1,484 @@
+const {AlzTask, AlzNote, AlzMemoryGame, GameResult, AlzContact} = require("../models/Alzheimer.model");
+
+// CREATE NOTE
+exports.createNote = async (req, res) => {
+  try {
+    const { text } = req.body;
+
+    if (!text) {
+      return res.status(400).json({ message: "Note text is required" });
+    }
+
+    const patientId = req.user.linkedPatientId;
+
+    const note = new AlzNote({
+      patientId,
+      text,
+      createdBy: req.user._id,
+      createdByRole: req.user.role,
+    });
+
+    await note.save();
+
+    res.status(201).json({
+      success: true,
+      note,
+    });
+
+  } catch (error) {
+    console.error("Create note error:", error);
+    res.status(500).json({ message: "Failed to create note" });
+  }
+};
+
+
+// GET NOTES
+exports.getNotes = async (req, res) => {
+  try {
+    const patientId = req.user.linkedPatientId;
+
+    const notes = await AlzNote.find({ patientId })
+      .populate("createdBy", "name email")
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      notes,
+    });
+
+  } catch (error) {
+    console.error("Fetch notes error:", error);
+    res.status(500).json({ message: "Failed to fetch notes" });
+  }
+};
+
+exports.updateNote = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { text } = req.body;
+
+    if (!text) {
+      return res.status(400).json({ message: "Text is required" });
+    }
+
+    const note = await AlzNote.findById(id);
+
+    if (!note) {
+      return res.status(404).json({ message: "Note not found" });
+    }
+
+    // 🔥 PERMISSION CHECK
+    if (
+      note.createdBy.toString() !== req.user._id.toString() &&
+      req.user.role !== "caregiver"
+    ) {
+      return res.status(403).json({ message: "Not authorized to update this note" });
+    }
+
+    note.text = text;
+
+    await note.save();
+
+    res.json({
+      success: true,
+      note,
+    });
+
+  } catch (error) {
+    console.error("Update note error:", error);
+    res.status(500).json({ message: "Failed to update note" });
+  }
+};
+
+exports.deleteNote = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const note = await AlzNote.findById(id);
+
+    if (!note) {
+      return res.status(404).json({ message: "Note not found" });
+    }
+
+    // 🔥 PERMISSION CHECK
+    if (
+      note.createdBy.toString() !== req.user._id.toString() &&
+      req.user.role !== "caregiver"
+    ) {
+      return res.status(403).json({ message: "Not authorized to delete this note" });
+    }
+
+    await note.deleteOne();
+
+    res.json({
+      success: true,
+      message: "Note deleted",
+    });
+
+  } catch (error) {
+    console.error("Delete note error:", error);
+    res.status(500).json({ message: "Failed to delete note" });
+  }
+};
+
+
+// CREATE TASK
+exports.createTask = async (req, res) => {
+  try {
+    const { text, dueTime } = req.body;
+
+    if (!text) {
+      return res.status(400).json({ message: "Task text is required" });
+    }
+
+    // 🔥 CORE LOGIC
+    const patientId = req.user.linkedPatientId;
+
+    const task = new AlzTask({
+      patientId,
+      text,
+      createdBy: req.user._id,
+      createdByRole: req.user.role,
+      dueTime: dueTime || null,
+    });
+
+    await task.save();
+
+    res.status(201).json({
+      success: true,
+      task,
+    });
+
+  } catch (error) {
+    console.error("Create task error:", error);
+    res.status(500).json({ message: "Failed to create task" });
+  }
+};
+
+exports.getTasks = async (req, res) => {
+  try {
+    const patientId = req.user.linkedPatientId;
+
+    const tasks = await AlzTask.find({ patientId })
+      .populate("createdBy", "name email")
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      tasks,
+    });
+
+  } catch (error) {
+    console.error("Fetch tasks error:", error);
+    res.status(500).json({ message: "Failed to fetch tasks" });
+  }
+};
+
+exports.updateTaskStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!["pending", "done"].includes(status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+
+    const task = await AlzTask.findById(id);
+
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    // 🔥 PERMISSION CHECK
+    if (
+      task.createdBy.toString() !== req.user._id.toString() &&
+      req.user.role !== "caregiver"
+    ) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    task.status = status;
+
+    await task.save();
+
+    res.json({
+      success: true,
+      task,
+    });
+
+  } catch (error) {
+    console.error("Update status error:", error);
+    res.status(500).json({ message: "Failed to update status" });
+  }
+};
+
+exports.updateTask = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { text, dueTime } = req.body;
+
+    const task = await AlzTask.findById(id);
+
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    // 🔥 PERMISSION CHECK
+    if (
+      task.createdBy.toString() !== req.user._id.toString() &&
+      req.user.role !== "caregiver"
+    ) {
+      return res.status(403).json({ message: "Not authorized to update" });
+    }
+
+    // update fields only if provided
+    if (text) task.text = text;
+    if (dueTime !== undefined) task.dueTime = dueTime;
+
+    await task.save();
+
+    res.json({
+      success: true,
+      task,
+    });
+
+  } catch (error) {
+    console.error("Update task error:", error);
+    res.status(500).json({ message: "Failed to update task" });
+  }
+};
+
+exports.deleteTask = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const task = await AlzTask.findById(id);
+
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    // 🔥 PERMISSION CHECK
+    if (
+      task.createdBy.toString() !== req.user._id.toString() &&
+      req.user.role !== "caregiver"
+    ) {
+      return res.status(403).json({ message: "Not authorized to delete" });
+    }
+
+    await task.deleteOne();
+
+    res.json({
+      success: true,
+      message: "Task deleted",
+    });
+
+  } catch (error) {
+    console.error("Delete task error:", error);
+    res.status(500).json({ message: "Failed to delete task" });
+  }
+};
+
+
+
+exports.createGameQuestion = async (req, res) => {
+  try {
+    // 🔥 only caregiver allowed
+    if (req.user.role !== "caregiver") {
+      return res.status(403).json({ message: "Only caregiver can create questions" });
+    }
+
+    const { question, options, correctAnswer, image } = req.body;
+
+    if (!question || !options || !correctAnswer) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    const game = new AlzMemoryGame({
+      patientId: req.user.linkedPatientId,
+      question,
+      options,
+      correctAnswer,
+      image,
+      createdBy: req.user._id,
+    });
+
+    await game.save();
+
+    res.status(201).json({
+      success: true,
+      game,
+    });
+
+  } catch (error) {
+    console.error("Create game question error:", error);
+    res.status(500).json({ message: "Failed to create question" });
+  }
+};
+
+exports.getGameQuestions = async (req, res) => {
+  try {
+    const patientId = req.user.linkedPatientId;
+
+    const questions = await AlzMemoryGame.find({ patientId });
+
+    res.json({
+      success: true,
+      questions,
+    });
+
+  } catch (error) {
+    console.error("Fetch game questions error:", error);
+    res.status(500).json({ message: "Failed to fetch questions" });
+  }
+};
+
+exports.submitGame = async (req, res) => {
+  try {
+    const { answers } = req.body;
+    // answers = [{ questionId, selectedAnswer }]
+
+    if (!answers || !Array.isArray(answers)) {
+      return res.status(400).json({ message: "Invalid answers format" });
+    }
+
+    let score = 0;
+
+    for (let ans of answers) {
+      const question = await AlzMemoryGame.findById(ans.questionId);
+
+      if (question && question.correctAnswer === ans.selectedAnswer) {
+        score++;
+      }
+    }
+
+    const result = new GameResult({
+      patientId: req.user.linkedPatientId,
+      score,
+      total: answers.length,
+    });
+
+    await result.save();
+
+    res.json({
+      success: true,
+      score,
+      total: answers.length,
+    });
+
+  } catch (error) {
+    console.error("Submit game error:", error);
+    res.status(500).json({ message: "Failed to submit game" });
+  }
+};
+
+exports.getGameResults = async (req, res) => {
+  try {
+    const patientId = req.user.linkedPatientId;
+
+    const results = await GameResult.find({ patientId })
+      .sort({ playedAt: -1 });
+
+    res.json({
+      success: true,
+      results,
+    });
+
+  } catch (error) {
+    console.error("Fetch game results error:", error);
+    res.status(500).json({ message: "Failed to fetch results" });
+  }
+};
+
+exports.createContact = async (req, res) => {
+  try {
+    const { name, phone, relation } = req.body;
+
+    if (!name || !phone) {
+      return res.status(400).json({ message: "Name and phone required" });
+    }
+
+    const contact = new Contact({
+      patientId: req.user.linkedPatientId,
+      name,
+      phone,
+      relation,
+      createdBy: req.user._id,
+    });
+
+    await contact.save();
+
+    res.status(201).json({
+      success: true,
+      contact,
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: "Failed to create contact" });
+  }
+};
+
+exports.getContacts = async (req, res) => {
+  try {
+    const contacts = await Contact.find({
+      patientId: req.user.linkedPatientId,
+    }).sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      contacts,
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch contacts" });
+  }
+};
+
+exports.updateContact = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, phone, relation } = req.body;
+
+    const contact = await Contact.findById(id);
+
+    if (!contact) {
+      return res.status(404).json({ message: "Contact not found" });
+    }
+
+    if (name) contact.name = name;
+    if (phone) contact.phone = phone;
+    if (relation) contact.relation = relation;
+
+    await contact.save();
+
+    res.json({
+      success: true,
+      contact,
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: "Failed to update contact" });
+  }
+};
+
+exports.deleteContact = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const contact = await Contact.findById(id);
+
+    if (!contact) {
+      return res.status(404).json({ message: "Contact not found" });
+    }
+
+    await contact.deleteOne();
+
+    res.json({
+      success: true,
+      message: "Contact deleted",
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: "Failed to delete contact" });
+  }
+};
