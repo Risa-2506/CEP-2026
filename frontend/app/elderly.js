@@ -38,6 +38,7 @@ const CITY_OPTIONS = [
 
 const TABS = [
   { key: "notepad", label: "Notes" },
+  { key: "routines", label: "Routines" },
   { key: "contacts", label: "Contacts" },
   { key: "memory", label: "Memories" },
   { key: "inspirational", label: "Inspiration" },
@@ -85,6 +86,7 @@ export default function Elderly() {
   const [places, setPlaces] = useState([]);
   const [selectedCity, setSelectedCity] = useState("");
   const [inspirationals, setInspirationals] = useState([]);
+  const [tasks, setTasks] = useState([]);
 
   const [forms, setForms] = useState({
     note: { title: "", content: "" },
@@ -107,7 +109,8 @@ export default function Elderly() {
       elderlyAPI.contacts.getAll(),
       elderlyAPI.memories.getAll(),
       elderlyAPI.places.getNearby(),
-      elderlyAPI.inspirationals.getAll()
+      elderlyAPI.inspirationals.getAll(),
+      elderlyAPI.tasks.getAll()
     ]);
 
     setNotes(results[0].value?.data || []);
@@ -115,6 +118,7 @@ export default function Elderly() {
     setMemories(results[2].value?.data || []);
     setPlaces(results[3].value?.data || []);
     setInspirationals(results[4].value?.data || []);
+    setTasks(results[5].value?.data || []);
 
     setLoading(false);
   }, []);
@@ -123,362 +127,207 @@ export default function Elderly() {
     loadAll();
   }, []);
 
-  const content = useMemo(() => {
+  const renderNotepad = () => (
+    <View style={styles.recordSection}>
+      <View style={styles.sectionIntro}>
+        <Text style={styles.sectionTitle}>My Notes</Text>
+        <Text style={styles.sectionSubtext}>Capture reminders, thoughts, and important details.</Text>
+      </View>
+
+      <Card style={styles.formCard}>
+        <Input placeholder="Title"
+          value={forms.note.title}
+          onChangeText={(v) => setField("note", "title", v)} tintColor={COLORS.primary} />
+        <Input multiline placeholder="Write note..."
+          value={forms.note.content}
+          onChangeText={(v) => setField("note", "content", v)} />
+        <Button label="Save Note" onPress={async () => {
+          await elderlyAPI.notepad.create(forms.note);
+          setForms((prev) => ({ ...prev, note: { title: "", content: "" } }));
+          loadAll();
+        }} />
+      </Card>
+
+      {notes.map((n) => (
+        <Card key={n._id} style={styles.listCard}>
+          <View style={styles.listHeaderRow}>
+            <Text style={styles.listTitle}>{n.title}</Text>
+            <Pressable style={styles.deletePill} onPress={async () => { await elderlyAPI.notepad.delete(n._id); loadAll(); }}>
+              <Text style={styles.deletePillText}>Delete</Text>
+            </Pressable>
+          </View>
+          <Text style={styles.listText}>{n.content}</Text>
+          <Text style={styles.itemDate}>{new Date(n.createdAt).toLocaleDateString()}</Text>
+        </Card>
+      ))}
+    </View>
+  );
+
+  const toggleTask = async (task) => {
+    const newStatus = task.status === "done" ? "pending" : "done";
+    await elderlyAPI.tasks.updateStatus(task._id, newStatus);
+    loadAll();
+  };
+
+  const renderTasks = () => (
+    <View style={styles.recordSection}>
+      <View style={styles.sectionIntro}>
+        <Text style={styles.sectionTitle}>Daily Routine</Text>
+        <Text style={styles.sectionSubtext}>Check off tasks as you complete them.</Text>
+      </View>
+
+      {tasks.length === 0 ? (
+        <Card style={styles.emptyStateBox}>
+          <Text style={styles.emptyStateTitle}>No tasks yet</Text>
+          <Text style={styles.emptyStateText}>Your caregiver hasn't added any routines for you today.</Text>
+        </Card>
+      ) : (
+        tasks.map((t) => (
+          <Pressable key={t._id} onPress={() => toggleTask(t)}>
+            <Card style={[styles.listCard, t.status === "done" && { backgroundColor: "#F0FDFA", borderColor: "#5EEAD4" }]}>
+              <View style={styles.listHeaderRow}>
+                <Text style={[styles.listTitle, t.status === "done" && styles.textStrike]}>{t.text}</Text>
+                <View style={[styles.statusPill, { backgroundColor: t.status === "done" ? "#10B981" : "#F59E0B" }]}>
+                    <Text style={styles.statusPillText}>{t.status === "done" ? "DONE" : "PENDING"}</Text>
+                </View>
+              </View>
+              <Text style={styles.subtext}>Tap to toggle status</Text>
+            </Card>
+          </Pressable>
+        ))
+      )}
+    </View>
+  );
+
+  const renderContacts = () => (
+    <View style={styles.recordSection}>
+      <View style={styles.sectionIntro}>
+        <Text style={styles.sectionTitle}>Contact Diary</Text>
+        <Text style={styles.sectionSubtext}>Keep trusted people and emergency numbers in one place.</Text>
+      </View>
+
+      <Card style={styles.formCard}>
+        <Input placeholder="Name" value={forms.contact.name} onChangeText={(v) => setField("contact", "name", v)} />
+        <Input placeholder="Phone" value={forms.contact.phone} onChangeText={(v) => setField("contact", "phone", v)} />
+        <Button label="Add Contact" onPress={async () => {
+          await elderlyAPI.contacts.create(forms.contact);
+          setForms((prev) => ({ ...prev, contact: { name: "", phone: "" } }));
+          loadAll();
+        }} />
+      </Card>
+
+      {contacts.map((c) => (
+        <Card key={c._id} style={styles.listCard}>
+          <View style={styles.listHeaderRow}>
+            <Text style={styles.listTitle}>{c.name}</Text>
+            <Pressable style={styles.deletePill} onPress={async () => { await elderlyAPI.contacts.delete(c._id); loadAll(); }}>
+              <Text style={styles.deletePillText}>Delete</Text>
+            </Pressable>
+          </View>
+          <Text style={styles.listText}>{c.phone}</Text>
+        </Card>
+      ))}
+    </View>
+  );
+
+  const renderMemories = () => (
+    <View style={styles.recordSection}>
+      <View style={styles.sectionIntro}>
+        <Text style={styles.sectionTitle}>Memory Lane</Text>
+        <Text style={styles.sectionSubtext}>Preserve stories and moments that matter to you.</Text>
+      </View>
+
+      <Card style={styles.formCard}>
+        <Input placeholder="Title" value={forms.memory.title} onChangeText={(v) => setField("memory", "title", v)} />
+        <Input multiline placeholder="Story" value={forms.memory.story} onChangeText={(v) => setField("memory", "story", v)} />
+        <Button label="Save Memory" onPress={async () => {
+          await elderlyAPI.memories.create(forms.memory);
+          setForms((prev) => ({ ...prev, memory: { title: "", story: "" } }));
+          loadAll();
+        }} />
+      </Card>
+
+      {memories.map((m) => (
+        <Card key={m._id} style={styles.listCard}>
+          <View style={styles.listHeaderRow}>
+            <Text style={styles.listTitle}>{m.title}</Text>
+            <Pressable style={styles.deletePill} onPress={async () => { await elderlyAPI.memories.delete(m._id); loadAll(); }}>
+              <Text style={styles.deletePillText}>Delete</Text>
+            </Pressable>
+          </View>
+          <Text style={styles.listText}>{m.story}</Text>
+        </Card>
+      ))}
+    </View>
+  );
+
+  const renderInspiration = () => {
+    const storyCards = inspirationals.length ? inspirationals.map(i => ({
+      id: i._id, title: i.title, teaser: i.teaser || i.content?.slice(0, 90), 
+      content: i.content || i.text, moral: i.moral || i.source || "Stay positive!"
+    })) : DEMO_STORIES;
+
+    return (
+      <View style={styles.inspirationSection}>
+        <View style={styles.inspirationHeaderBox}>
+          <Text style={styles.inspirationSectionTitle}>Daily Inspiration</Text>
+          <Text style={styles.inspirationSectionSubtext}>Positive thoughts for a better day.</Text>
+        </View>
+        <View style={styles.inspirationSwiperWrap}>
+          <Swiper
+            cards={storyCards}
+            renderCard={(card) => card ? (
+              <View style={styles.inspirationCard}>
+                <Text style={styles.inspirationCardLabel}>Story</Text>
+                <Text style={styles.inspirationTitle}>{card.title}</Text>
+                <Text style={styles.inspirationTeaser}>{card.teaser}</Text>
+                <Text style={styles.inspirationHint}>Tap to read more</Text>
+              </View>
+            ) : null}
+            onTapCard={(idx) => setSelectedStory(storyCards[idx])}
+            stackSize={3} backgroundColor="transparent"
+          />
+        </View>
+      </View>
+    );
+  };
+
+  const renderContent = () => {
     switch (activeTab) {
-
-      case "notepad":
-        return (
-          <View style={styles.recordSection}>
-            <View style={styles.sectionIntro}>
-              <Text style={styles.sectionTitle}>My Notes</Text>
-              <Text style={styles.sectionSubtext}>Capture reminders, thoughts, and important details.</Text>
-            </View>
-
-            <Card style={styles.formCard}>
-              <Input placeholder="Title"
-                value={forms.note.title}
-                onChangeText={(v) => setField("note", "title", v)} />
-              <Input multiline placeholder="Write note..."
-                value={forms.note.content}
-                onChangeText={(v) => setField("note", "content", v)} />
-              <Button label="Save Note" onPress={async () => {
-                await elderlyAPI.notepad.create(forms.note);
-                setForms((prev) => ({
-                  ...prev,
-                  note: { title: "", content: "" }
-                }));
-                loadAll();
-              }} />
+      case "notepad": return renderNotepad();
+      case "routines": return renderTasks();
+      case "contacts": return renderContacts();
+      case "memory": return renderMemories();
+      case "inspirational": return renderInspiration();
+      case "places": return (
+        <View>
+          <Text style={styles.sectionTitle}>Find Nearby Places</Text>
+          <View style={styles.cityGrid}>
+            {CITY_OPTIONS.map(city => (
+              <Pressable key={city} style={[styles.cityCard, selectedCity === city && styles.cityCardSelected]} 
+                onPress={async () => { setSelectedCity(city); const res = await elderlyAPI.places.getNearby(city); setPlaces(res.data || []); }}>
+                <Text style={[styles.cityCardTitle, selectedCity === city && styles.cityCardTitleSelected]}>{city}</Text>
+              </Pressable>
+            ))}
+          </View>
+          {places.map(p => (
+            <Card key={p._id}>
+              <Text style={styles.placeName}>{p.name}</Text>
+              <Text style={styles.placeAddress}>{p.address}</Text>
             </Card>
-
-            {notes.length ? (
-              notes.map((n) => (
-                <Card key={n._id} style={styles.listCard}>
-                  <View style={styles.listHeaderRow}>
-                    <Text style={styles.listTitle}>{n.title}</Text>
-                    <Pressable
-                      style={styles.deletePill}
-                      onPress={async () => {
-                        await elderlyAPI.notepad.delete(n._id);
-                        await loadAll();
-                      }}
-                    >
-                      <Text style={styles.deletePillText}>Delete</Text>
-                    </Pressable>
-                  </View>
-                  <Text style={styles.listText}>{n.content}</Text>
-                </Card>
-              ))
-            ) : (
-              <View style={styles.emptyStateBox}>
-                <Text style={styles.emptyStateTitle}>No notes yet</Text>
-                <Text style={styles.emptyStateText}>Add your first note using the form above.</Text>
-              </View>
-            )}
-          </View>
-        );
-
-      case "contacts":
-        return (
-          <View style={styles.recordSection}>
-            <View style={styles.sectionIntro}>
-              <Text style={styles.sectionTitle}>Contact Diary</Text>
-              <Text style={styles.sectionSubtext}>Keep trusted people and emergency numbers in one place.</Text>
-            </View>
-
-            <Card style={styles.formCard}>
-              <Input placeholder="Name"
-                value={forms.contact.name}
-                onChangeText={(v) => setField("contact", "name", v)} />
-              <Input placeholder="Phone"
-                value={forms.contact.phone}
-                onChangeText={(v) => setField("contact", "phone", v)} />
-              <Button label="Add Contact" onPress={async () => {
-                await elderlyAPI.contacts.create(forms.contact);
-                setForms((prev) => ({
-                  ...prev,
-                  contact: { name: "", phone: "" }
-                }));
-                loadAll();
-              }} />
-            </Card>
-
-            {contacts.length ? (
-              contacts.map((c) => (
-                <Card key={c._id} style={styles.listCard}>
-                  <View style={styles.listHeaderRow}>
-                    <Text style={styles.listTitle}>{c.name}</Text>
-                    <Pressable
-                      style={styles.deletePill}
-                      onPress={async () => {
-                        await elderlyAPI.contacts.delete(c._id);
-                        await loadAll();
-                      }}
-                    >
-                      <Text style={styles.deletePillText}>Delete</Text>
-                    </Pressable>
-                  </View>
-                  <Text style={styles.listText}>{c.phone}</Text>
-                </Card>
-              ))
-            ) : (
-              <View style={styles.emptyStateBox}>
-                <Text style={styles.emptyStateTitle}>No contacts yet</Text>
-                <Text style={styles.emptyStateText}>Add a contact so you can reach them quickly.</Text>
-              </View>
-            )}
-          </View>
-        );
-
-      case "memory":
-        return (
-          <View style={styles.recordSection}>
-            <View style={styles.sectionIntro}>
-              <Text style={styles.sectionTitle}>Memory Lane</Text>
-              <Text style={styles.sectionSubtext}>Preserve stories and moments that matter to you.</Text>
-            </View>
-
-            <Card style={styles.formCard}>
-              <Input placeholder="Title"
-                value={forms.memory.title}
-                onChangeText={(v) => setField("memory", "title", v)} />
-              <Input multiline placeholder="Story"
-                value={forms.memory.story}
-                onChangeText={(v) => setField("memory", "story", v)} />
-              <Button label="Save Memory" onPress={async () => {
-                await elderlyAPI.memories.create(forms.memory);
-                setForms((prev) => ({
-                  ...prev,
-                  memory: { title: "", story: "" }
-                }));
-                loadAll();
-              }} />
-            </Card>
-
-            {memories.length ? (
-              memories.map((m) => (
-                <Card key={m._id} style={styles.listCard}>
-                  <View style={styles.listHeaderRow}>
-                    <Text style={styles.listTitle}>{m.title}</Text>
-                    <Pressable
-                      style={styles.deletePill}
-                      onPress={async () => {
-                        await elderlyAPI.memories.delete(m._id);
-                        await loadAll();
-                      }}
-                    >
-                      <Text style={styles.deletePillText}>Delete</Text>
-                    </Pressable>
-                  </View>
-                  <Text style={styles.listText}>{m.story}</Text>
-                </Card>
-              ))
-            ) : (
-              <View style={styles.emptyStateBox}>
-                <Text style={styles.emptyStateTitle}>No memories yet</Text>
-                <Text style={styles.emptyStateText}>Write your first memory to start your collection.</Text>
-              </View>
-            )}
-          </View>
-        );
-
-      // ✅ NEW SWIPE FEATURE HERE (ONLY CHANGE)
-      case "inspirational":
-        const storyCards = inspirationals.length
-          ? inspirationals.map((item) => {
-              const fullContent = item.content || item.text || "";
-              const teaserText = item.teaser
-                || (fullContent.length > 90 ? `${fullContent.slice(0, 90)}...` : fullContent);
-
-              return {
-                id: item._id,
-                title: item.title,
-                teaser: teaserText,
-                content: fullContent,
-                moral: item.moral || item.source || "Stay inspired every day."
-              };
-            })
-          : DEMO_STORIES;
-
-        return (
-          <View style={styles.inspirationSection}>
-            <View style={styles.inspirationHeaderBox}>
-              <Text style={styles.inspirationSectionTitle}>Daily Inspiration</Text>
-              <Text style={styles.inspirationSectionSubtext}>
-                Read, reflect, and carry one positive thought through your day.
-              </Text>
-            </View>
-
-            <View style={styles.inspirationSwiperWrap}>
-              <Swiper
-                cards={storyCards}
-                renderCard={(card) => {
-                  if (!card) return null;
-                  return (
-                    <View style={styles.inspirationCard}>
-                      <Text style={styles.inspirationCardLabel}>Featured Story</Text>
-                      <Text style={styles.inspirationTitle}>
-                        {card.title}
-                      </Text>
-
-                      <Text style={styles.inspirationTeaser}>
-                        {card.teaser}
-                      </Text>
-
-                      <Text style={styles.inspirationHint}>
-                        Tap to read full story
-                      </Text>
-                    </View>
-                  );
-                }}
-                onTapCard={(index) => {
-                  const card = storyCards[index];
-                  if (card) {
-                    setSelectedStory(card);
-                  }
-                }}
-                stackSize={3}
-                backgroundColor="transparent"
-              />
-            </View>
-
-            {!inspirationals.length ? (
-              <View style={styles.emptyInspirationBox}>
-                <Text style={styles.emptyInspirationText}>No inspirational stories found in MongoDB yet.</Text>
-                <Pressable
-                  style={styles.btn}
-                  onPress={async () => {
-                    await elderlyAPI.inspirationals.save({
-                      title: DEMO_STORIES[0].title,
-                      text: DEMO_STORIES[0].content,
-                      source: DEMO_STORIES[0].moral,
-                      category: "quote"
-                    });
-                    await loadAll();
-                  }}
-                >
-                  <Text style={styles.btnText}>Create Demo Story In MongoDB</Text>
-                </Pressable>
-              </View>
-            ) : null}
-
-            {selectedStory ? (
-              <Modal transparent animationType="fade" visible={Boolean(selectedStory)}>
-                <View style={styles.storyModalBackdrop}>
-                  <View style={styles.storyBox}>
-                    <View style={styles.storyHeaderRow}>
-                      <Text style={styles.storyTitle}>{selectedStory.title}</Text>
-                      <Pressable onPress={() => setSelectedStory(null)} style={styles.closeBtn}>
-                        <Text style={styles.closeBtnText}>Close</Text>
-                      </Pressable>
-                    </View>
-                    <ScrollView style={styles.storyScrollArea} showsVerticalScrollIndicator={false}>
-                      <Text style={styles.storyContent}>{selectedStory.content}</Text>
-                      <View style={styles.moralPill}>
-                        <Text style={styles.moralLabel}>Moral</Text>
-                        <Text style={styles.moralText}>{selectedStory.moral}</Text>
-                      </View>
-                    </ScrollView>
-                  </View>
-                </View>
-              </Modal>
-            ) : null}
-          </View>
-        );
-
-      case "places":
-        return (
-          <>
-            <View style={styles.citySection}>
-              <Text style={styles.citySectionTitle}>Find Places Near You</Text>
-              <View style={styles.cityGrid}>
-                {CITY_OPTIONS.map((cityName) => {
-                  const isSelected = selectedCity === cityName;
-                  return (
-                    <Pressable
-                      key={cityName}
-                      style={[
-                        styles.cityCard,
-                        isSelected && styles.cityCardSelected
-                      ]}
-                      onPress={async () => {
-                        setSelectedCity(cityName);
-                        const res = await elderlyAPI.places.getNearby(cityName);
-                        setPlaces(res.data || []);
-                      }}
-                    >
-                      <Text style={[
-                        styles.cityCardTitle,
-                        isSelected && styles.cityCardTitleSelected
-                      ]}>
-                        {cityName}
-                      </Text>
-                      <Text style={[
-                        styles.cityCardText,
-                        isSelected && styles.cityCardTextSelected
-                      ]}>
-                        {isSelected ? "✓ Selected" : "Tap here"}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-
-            {selectedCity ? (
-              <View style={styles.cityResultHeader}>
-                <View style={styles.resultHeaderContent}>
-                  <View style={styles.resultTitleRow}>
-                    <Text style={styles.cityResultTitle}>Places in {selectedCity}</Text>
-                  </View>
-                  <Text style={styles.cityResultSubtext}>
-                    Tap another city to see different places
-                  </Text>
-                </View>
-              </View>
-            ) : null}
-
-            {/* Places List */}
-            {places.length ? (
-              places.map((p) => (
-                <Card key={p._id}>
-                  <View style={styles.placeCardContent}>
-                    <View style={styles.placeInfo}>
-                      <Text style={styles.placeName}>{p.name}</Text>
-                      <View style={styles.placeAddressRow}>
-                        <Text style={styles.placeAddress}>{p.address}</Text>
-                      </View>
-                      {p.city ? (
-                        <View style={styles.placeCityBadge}>
-                          <Text style={styles.placeCityBadgeText}>{p.city}</Text>
-                        </View>
-                      ) : null}
-                    </View>
-                  </View>
-                </Card>
-              ))
-            ) : selectedCity ? (
-              <View style={styles.emptyPlacesBox}>
-                <Text style={styles.emptyPlacesTitle}>No places found</Text>
-                <Text style={styles.emptyPlacesText}>
-                  No places available in {selectedCity} yet. Check back soon!
-                </Text>
-              </View>
-            ) : null}
-          </>
-        );
-
-      default:
-        return null;
+          ))}
+        </View>
+      );
+      default: return null;
     }
-  }, [activeTab, notes, contacts, memories, places, inspirationals, forms, selectedStory]);
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container}>
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
-            <Text style={styles.backButtonIcon}>←</Text>
+          <Pressable onPress={() => router.replace("/")} style={styles.backButton}>
+            <Text style={styles.backButtonIcon}>← Home</Text>
           </Pressable>
           <View style={styles.headerTextContainer}>
             <Text style={styles.headerTitle}>ElderCare</Text>
@@ -509,9 +358,30 @@ export default function Elderly() {
       {loading ? (
         <ActivityIndicator size="large" color={COLORS.primary} />
       ) : (
-        <View style={{ marginTop: 10 }}>{content}</View>
+        <View style={{ marginTop: 10 }}>{renderContent()}</View>
       )}
       </ScrollView>
+
+      {/* Story Modal */}
+      <Modal visible={!!selectedStory} transparent animationType="fade" onRequestClose={() => setSelectedStory(null)}>
+        <View style={styles.storyModalBackdrop}>
+          <View style={styles.storyBox}>
+            <View style={styles.storyHeaderRow}>
+              <Text style={styles.storyTitle}>{selectedStory?.title}</Text>
+              <Pressable style={styles.closeBtn} onPress={() => setSelectedStory(null)}>
+                <Text style={styles.closeBtnText}>Close</Text>
+              </Pressable>
+            </View>
+            <ScrollView style={styles.storyScrollArea}>
+              <Text style={styles.storyContent}>{selectedStory?.content}</Text>
+              <View style={styles.moralPill}>
+                <Text style={styles.moralLabel}>The Lesson</Text>
+                <Text style={styles.moralText}>{selectedStory?.moral}</Text>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -614,15 +484,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontWeight: "600"
   },
-  title: {
-    fontWeight: "700",
-    color: COLORS.text,
-    fontSize: 16
-  },
-  text: {
-    color: COLORS.muted,
-    marginTop: 4
-  },
   recordSection: {
     marginTop: 2
   },
@@ -678,6 +539,11 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     fontSize: 14
   },
+  itemDate: {
+    color: COLORS.muted,
+    fontSize: 11,
+    marginTop: 6
+  },
   deletePill: {
     backgroundColor: "#FEE2E2",
     borderWidth: 1,
@@ -710,24 +576,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19
   },
-  citySection: {
-    marginBottom: 20,
-    backgroundColor: "rgba(37, 99, 235, 0.05)",
-    padding: 16,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "rgba(37, 99, 235, 0.2)"
-  },
-  citySectionTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: COLORS.text,
-    marginBottom: 14
-  },
   cityGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between"
+    justifyContent: "space-between",
+    marginTop: 10
   },
   cityCard: {
     width: "48%",
@@ -738,132 +591,30 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderWidth: 2,
     borderColor: "#E0E7FF",
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
     justifyContent: "center",
     alignItems: "center"
   },
   cityCardSelected: {
     backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-    shadowColor: COLORS.primary,
-    shadowOpacity: 0.3
-  },
-  cityEmoji: {
-    fontSize: 32,
-    marginBottom: 8
+    borderColor: COLORS.primary
   },
   cityCardTitle: {
     color: "#1E3A8A",
     fontSize: 16,
-    fontWeight: "700",
-    textAlign: "center",
-    marginBottom: 4
+    fontWeight: "700"
   },
   cityCardTitleSelected: {
     color: "#FFFFFF"
-  },
-  cityCardText: {
-    color: COLORS.muted,
-    fontSize: 12,
-    textAlign: "center",
-    lineHeight: 16
-  },
-  cityCardTextSelected: {
-    color: "rgba(255, 255, 255, 0.9)"
-  },
-  cityResultHeader: {
-    marginBottom: 16,
-    backgroundColor: COLORS.primary,
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: COLORS.primary,
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 3
-  },
-  resultHeaderContent: {
-    flex: 1
-  },
-  resultTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 6
-  },
-  resultHeaderIcon: {
-    fontSize: 24,
-    marginRight: 10
-  },
-  cityResultTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#FFFFFF",
-    flex: 1
-  },
-  cityResultSubtext: {
-    marginTop: 4,
-    color: "#E0F2FE",
-    fontSize: 13,
-    lineHeight: 18
-  },
-  placeCardContent: {
-    flex: 1
-  },
-  placeInfo: {
-    flex: 1
   },
   placeName: {
     fontSize: 16,
     fontWeight: "700",
     color: COLORS.text,
-    marginBottom: 6
-  },
-  placeAddressRow: {
-    marginBottom: 10
+    marginBottom: 4
   },
   placeAddress: {
     color: COLORS.muted,
-    fontSize: 13,
-    lineHeight: 18
-  },
-  placeCityBadge: {
-    backgroundColor: "rgba(37, 99, 235, 0.1)",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    alignSelf: "flex-start"
-  },
-  placeCityBadgeText: {
-    color: COLORS.primary,
-    fontWeight: "600",
-    fontSize: 12
-  },
-  emptyPlacesBox: {
-    backgroundColor: "#FEF3C7",
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: "#FBBF24",
-    padding: 18,
-    marginTop: 8,
-    alignItems: "center"
-  },
-  emptyPlacesTitle: {
-    color: "#92400E",
-    fontWeight: "700",
-    fontSize: 18,
-    marginBottom: 6
-  },
-  emptyPlacesText: {
-    color: "#B45309",
-    lineHeight: 18,
-    textAlign: "center"
-  },
-  placeCity: {
-    marginTop: 6,
-    color: "#1D4ED8",
-    fontWeight: "600"
+    fontSize: 13
   },
   inspirationSection: {
     paddingTop: 2
@@ -874,11 +625,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#DBEAFE",
     padding: 14,
-    marginBottom: 12,
-    shadowColor: "#1E3A8A",
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 2
+    marginBottom: 12
   },
   inspirationSectionTitle: {
     fontSize: 20,
@@ -888,25 +635,19 @@ const styles = StyleSheet.create({
   },
   inspirationSectionSubtext: {
     color: "#475569",
-    lineHeight: 20,
     fontSize: 13
   },
   inspirationSwiperWrap: {
-    height: 360,
-    marginBottom: 6
+    height: 360
   },
   inspirationCard: {
     backgroundColor: "#fff",
     borderRadius: 24,
-    paddingHorizontal: 22,
-    paddingVertical: 20,
+    padding: 22,
     height: 320,
     borderWidth: 1,
     borderColor: "#BFDBFE",
-    shadowColor: "#1D4ED8",
-    shadowOpacity: 0.14,
-    shadowRadius: 16,
-    elevation: 7
+    elevation: 5
   },
   inspirationCardLabel: {
     alignSelf: "flex-start",
@@ -917,115 +658,105 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     fontSize: 11,
     fontWeight: "700",
-    letterSpacing: 0.3,
-    textTransform: "uppercase",
     marginBottom: 12
   },
   inspirationTitle: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#0F172A",
-    lineHeight: 30
+    color: "#0F172A"
   },
   inspirationTeaser: {
     marginTop: 14,
     fontSize: 16,
     color: "#334155",
-    lineHeight: 25,
     flex: 1
   },
   inspirationHint: {
     marginTop: 16,
     color: "#1D4ED8",
-    textAlign: "left",
     fontWeight: "700",
     fontSize: 13
-  },
-  emptyInspirationBox: {
-    marginTop: 8,
-    backgroundColor: "#FFFFFF",
-    borderColor: "#BFDBFE",
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 14
-  },
-  emptyInspirationText: {
-    color: "#334155",
-    marginBottom: 12,
-    lineHeight: 20,
-    fontSize: 14
   },
   storyModalBackdrop: {
     flex: 1,
     backgroundColor: "rgba(15, 23, 42, 0.45)",
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 20
+    padding: 20
   },
   storyBox: {
     backgroundColor: "#FFFFFF",
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#BFDBFE",
     padding: 20,
     width: "100%",
-    maxWidth: 380,
-    shadowColor: "#0F172A",
-    shadowOpacity: 0.18,
-    shadowRadius: 20,
-    elevation: 12
+    maxHeight: "80%"
   },
   storyHeaderRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8
+    marginBottom: 15
   },
   closeBtn: {
     backgroundColor: "#EFF6FF",
     borderRadius: 999,
-    paddingVertical: 7,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: "#BFDBFE"
+    paddingVertical: 6,
+    paddingHorizontal: 12
   },
   closeBtnText: {
     color: "#1D4ED8",
-    fontWeight: "700",
-    fontSize: 12
+    fontWeight: "700"
   },
   storyTitle: {
     flex: 1,
     fontSize: 22,
     fontWeight: "700",
-    color: "#0F172A",
-    marginRight: 10
+    color: "#0F172A"
   },
   storyContent: {
     fontSize: 15,
-    lineHeight: 25,
+    lineHeight: 24,
     color: "#334155"
   },
   storyScrollArea: {
-    maxHeight: 380
+    flex: 1
   },
   moralPill: {
-    marginTop: 16,
-    backgroundColor: "#EFF6FF",
+    marginTop: 20,
+    backgroundColor: "#F0F9FF",
     borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#93C5FD",
-    padding: 14
+    padding: 14,
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.primary
   },
   moralLabel: {
-    color: "#1D4ED8",
+    color: COLORS.primary,
     fontWeight: "700",
-    marginBottom: 4,
+    fontSize: 12,
     textTransform: "uppercase",
-    fontSize: 12
+    marginBottom: 4
   },
   moralText: {
     color: "#1E40AF",
     fontWeight: "600"
+  },
+  statusPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 999
+  },
+  statusPillText: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "900"
+  },
+  textStrike: {
+    textDecorationLine: "line-through",
+    color: "#94A3B8"
+  },
+  subtext: {
+    fontSize: 12,
+    color: "#94A3B8",
+    marginTop: 2
   }
 });

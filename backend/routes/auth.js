@@ -9,6 +9,8 @@ const authMiddleware = require("../middleware/authMiddleware");
 // Helper to discover if a user is a patient, caregiver, or guardian
 const discoverUserRole = async (user) => {
   const userEmail = (user.email || "").toLowerCase().trim();
+  console.log(`[AUTH] Discovering role for: ${userEmail} (ID: ${user._id})`);
+  
   let role = "user";
   let id = null;
   let name = "";
@@ -23,41 +25,50 @@ const discoverUserRole = async (user) => {
     id = alzPatient._id;
     name = alzPatient.patientName;
     type = "alzheimer";
+    console.log(`[AUTH] Found as Alzheimer Patient: ${id}`);
   } else if (eldPatient) {
     role = "patient";
     id = eldPatient._id;
     name = eldPatient.patientName;
     type = "elderly";
+    console.log(`[AUTH] Found as Elderly Patient: ${id}`);
   } else {
     // 2. Check Caregivers
-    const alzCaregiver = await Alzheimer.findOne({ "caregiver.email": userEmail });
-    const eldCaregiver = await Elderly.findOne({ "caregiver.email": userEmail });
+    // Use regex to be safe with casing and whitespace
+    const emailRegex = new RegExp(`^${userEmail.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i");
+    
+    const alzCaregiver = await Alzheimer.findOne({ "caregiver.email": emailRegex });
+    const eldCaregiver = await Elderly.findOne({ "caregiver.email": emailRegex });
 
     if (alzCaregiver) {
       role = "caregiver";
       id = alzCaregiver._id;
       name = alzCaregiver.patientName;
       type = "alzheimer";
+      console.log(`[AUTH] Found as Alzheimer Caregiver for: ${name} (${id})`);
     } else if (eldCaregiver) {
       role = "caregiver";
       id = eldCaregiver._id;
       name = eldCaregiver.patientName;
       type = "elderly";
+      console.log(`[AUTH] Found as Elderly Caregiver for: ${name} (${id})`);
     } else {
       // 3. Check Guardians
-      const alzGuardian = await Alzheimer.findOne({ "guardians.email": userEmail });
-      const eldGuardian = await Elderly.findOne({ "guardians.email": userEmail });
+      const alzGuardian = await Alzheimer.findOne({ "guardians.email": emailRegex });
+      const eldGuardian = await Elderly.findOne({ "guardians.email": emailRegex });
 
       if (alzGuardian) {
         role = "guardian";
         id = alzGuardian._id;
         name = alzGuardian.patientName;
         type = "alzheimer";
+        console.log(`[AUTH] Found as Alzheimer Guardian for: ${name} (${id})`);
       } else if (eldGuardian) {
         role = "guardian";
         id = eldGuardian._id;
         name = eldGuardian.patientName;
         type = "elderly";
+        console.log(`[AUTH] Found as Elderly Guardian for: ${name} (${id})`);
       }
     }
   }
@@ -340,6 +351,31 @@ router.get("/role-check", authMiddleware, async (req, res) => {
   } catch (err) {
     console.error("Role check error:", err);
     res.status(500).json({ message: "Failed to perform role check" });
+  }
+});
+
+// POST /auth/sync-role - Explicitly re-sync role
+router.post("/sync-role", authMiddleware, async (req, res) => {
+  try {
+    const linkInfo = await discoverUserRole(req.user);
+    
+    const user = await User.findByIdAndUpdate(req.user._id, {
+      role: linkInfo.role,
+      linkedPatientId: linkInfo.id,
+      linkedPatientName: linkInfo.name,
+      linkedPatientType: linkInfo.type
+    }, { new: true }).select("-password");
+
+    res.json({
+      success: true,
+      message: "Role profile synchronized successfully",
+      role: user.role,
+      linkedPatientType: user.linkedPatientType,
+      linkedPatientName: user.linkedPatientName
+    });
+  } catch (err) {
+    console.error("Sync role error:", err);
+    res.status(500).json({ message: "Sync failed" });
   }
 });
 

@@ -3,7 +3,7 @@ const {AlzTask, AlzNote, AlzMemoryGame, GameResult, AlzContact} = require("../mo
 // CREATE NOTE
 exports.createNote = async (req, res) => {
   try {
-    const { text } = req.body;
+    const { text, status } = req.body;
 
     if (!text) {
       return res.status(400).json({ message: "Note text is required" });
@@ -14,6 +14,7 @@ exports.createNote = async (req, res) => {
     const note = new AlzNote({
       patientId,
       text,
+      status: status || "pending",
       createdBy: req.user._id,
       createdByRole: req.user.role,
     });
@@ -31,6 +32,38 @@ exports.createNote = async (req, res) => {
   }
 };
 
+// UPDATE NOTE STATUS (Dedicated)
+exports.updateNoteStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const validStatuses = ["pending", "acknowledged", "completed"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: "Invalid status value" });
+    }
+
+    const note = await AlzNote.findById(id);
+    if (!note) return res.status(404).json({ message: "Note not found" });
+
+    // Permission check: caregiver or linked patient
+    const isCaregiver = req.user.role === "caregiver";
+    const isPatient = note.patientId.toString() === req.user.linkedPatientId?.toString();
+
+    if (!isCaregiver && !isPatient) {
+      return res.status(403).json({ message: "Not authorized to update this status" });
+    }
+
+    note.status = status;
+    await note.save();
+
+    res.json({ success: true, note });
+  } catch (error) {
+    console.error("Update note status error:", error);
+    res.status(500).json({ message: "Failed to update note status" });
+  }
+};
+
 
 // GET NOTES
 exports.getNotes = async (req, res) => {
@@ -40,6 +73,9 @@ exports.getNotes = async (req, res) => {
     const notes = await AlzNote.find({ patientId })
       .populate("createdBy", "name email")
       .sort({ createdAt: -1 });
+
+    console.log(`[ALZ NOTES] Fetching for patient: ${patientId}, Found: ${notes.length}`);
+    if (notes.length > 0) console.log(`[ALZ NOTES] First note ID: ${notes[0]._id}, Model: ${notes[0].constructor.modelName}`);
 
     res.json({
       success: true,
@@ -125,7 +161,7 @@ exports.deleteNote = async (req, res) => {
 // CREATE TASK
 exports.createTask = async (req, res) => {
   try {
-    const { text, dueTime } = req.body;
+    const { text, dueTime, isPrivate } = req.body;
 
     if (!text) {
       return res.status(400).json({ message: "Task text is required" });
@@ -140,6 +176,7 @@ exports.createTask = async (req, res) => {
       createdBy: req.user._id,
       createdByRole: req.user.role,
       dueTime: dueTime || null,
+      isPrivate: isPrivate || false,
     });
 
     await task.save();
@@ -158,8 +195,15 @@ exports.createTask = async (req, res) => {
 exports.getTasks = async (req, res) => {
   try {
     const patientId = req.user.linkedPatientId;
+    const isPatient = req.user.role === "patient";
 
-    const tasks = await AlzTask.find({ patientId })
+    // If patient, hide private tasks. If caregiver, show everything for this patient.
+    const query = { patientId };
+    if (isPatient) {
+      query.isPrivate = { $ne: true };
+    }
+
+    const tasks = await AlzTask.find(query)
       .populate("createdBy", "name email")
       .sort({ createdAt: -1 });
 
@@ -190,10 +234,16 @@ exports.updateTaskStatus = async (req, res) => {
     }
 
     // 🔥 PERMISSION CHECK
+    // Allow if:
+    // 1. User is the creator
+    // 2. User is the linked patient
+    // 3. User is a caregiver
     if (
       task.createdBy.toString() !== req.user._id.toString() &&
+      task.patientId.toString() !== req.user.linkedPatientId?.toString() &&
       req.user.role !== "caregiver"
     ) {
+      console.log(`[AUTH FAIL] User ${req.user._id} (${req.user.role}) tried to update task ${id}. PatientId: ${task.patientId}, LinkedPatientId: ${req.user.linkedPatientId}`);
       return res.status(403).json({ message: "Not authorized" });
     }
 
@@ -226,6 +276,7 @@ exports.updateTask = async (req, res) => {
     // 🔥 PERMISSION CHECK
     if (
       task.createdBy.toString() !== req.user._id.toString() &&
+      task.patientId.toString() !== req.user.linkedPatientId?.toString() &&
       req.user.role !== "caregiver"
     ) {
       return res.status(403).json({ message: "Not authorized to update" });
@@ -261,6 +312,7 @@ exports.deleteTask = async (req, res) => {
     // 🔥 PERMISSION CHECK
     if (
       task.createdBy.toString() !== req.user._id.toString() &&
+      task.patientId.toString() !== req.user.linkedPatientId?.toString() &&
       req.user.role !== "caregiver"
     ) {
       return res.status(403).json({ message: "Not authorized to delete" });
@@ -398,7 +450,7 @@ exports.createContact = async (req, res) => {
       return res.status(400).json({ message: "Name and phone required" });
     }
 
-    const contact = new Contact({
+    const contact = new AlzContact({
       patientId: req.user.linkedPatientId,
       name,
       phone,
@@ -420,7 +472,7 @@ exports.createContact = async (req, res) => {
 
 exports.getContacts = async (req, res) => {
   try {
-    const contacts = await Contact.find({
+    const contacts = await AlzContact.find({
       patientId: req.user.linkedPatientId,
     }).sort({ createdAt: -1 });
 
@@ -439,7 +491,7 @@ exports.updateContact = async (req, res) => {
     const { id } = req.params;
     const { name, phone, relation } = req.body;
 
-    const contact = await Contact.findById(id);
+    const contact = await AlzContact.findById(id);
 
     if (!contact) {
       return res.status(404).json({ message: "Contact not found" });
@@ -465,7 +517,7 @@ exports.deleteContact = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const contact = await Contact.findById(id);
+    const contact = await AlzContact.findById(id);
 
     if (!contact) {
       return res.status(404).json({ message: "Contact not found" });

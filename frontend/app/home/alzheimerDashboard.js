@@ -8,10 +8,10 @@ export default function AlzheimerDashboard() {
   const { user } = useAuth();
 
   const dashboardItems = [
-    { icon: "🧠", title: "Memory Bank", sub: "View saved memories", color: "#7C3AED" },
-    { icon: "✅", title: "Tasks / Routine", sub: "Daily activities", color: "#16A34A" },
-    { icon: "📞", title: "Contacts", sub: "Important contacts", color: "#2563EB" },
-    { icon: "⏰", title: "Reminders", sub: "Scheduled reminders", color: "#B45309" },
+    { id: "game", icon: "🧠", title: "Memory Game", sub: "Play to train memory", color: "#7C3AED" },
+    { id: "tasks", icon: "✅", title: "Tasks / Routine", sub: "Daily activities", color: "#16A34A" },
+    { id: "contacts", icon: "📞", title: "Contacts", sub: "Important contacts", color: "#2563EB" },
+    { id: "notes", icon: "📋", title: "Care Notes", sub: "Instructions & notes", color: "#B45309" },
   ];
 
   return (
@@ -39,7 +39,12 @@ export default function AlzheimerDashboard() {
         {/* Dashboard Cards */}
         <View style={styles.grid}>
           {dashboardItems.map((item, i) => (
-            <TouchableOpacity key={i} style={styles.card} activeOpacity={0.8}>
+            <TouchableOpacity 
+              key={i} 
+              style={styles.card} 
+              activeOpacity={0.8}
+              onPress={() => router.push(`/alzheimer?tab=${item.id}`)}
+            >
               <View style={[styles.cardIconBox, { backgroundColor: item.color }]}>
                 <Text style={styles.cardIcon}>{item.icon}</Text>
               </View>

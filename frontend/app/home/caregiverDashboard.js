@@ -8,12 +8,12 @@ export default function CaregiverDashboard() {
   const { user } = useAuth();
 
   const items = [
-    { icon: "📍", title: "Patient Location", sub: "Live tracking", color: "#2563EB" },
-    { icon: "🚨", title: "Alerts", sub: "Fall & unsafe zones", color: "#DC2626" },
-    { icon: "📋", title: "Care Notes", sub: "Add & view notes", color: "#16A34A" },
-    { icon: "📊", title: "Activity Monitor", sub: "Patient activity", color: "#7C3AED" },
-    { icon: "🗺️", title: "Safe Zones", sub: "Geofencing", color: "#B45309" },
-    { icon: "⏰", title: "Reminders", sub: "Set reminders", color: "#0891B2" },
+    { id: "notes", icon: "📋", title: "Care Notes", sub: "Add & view notes", color: "#16A34A" },
+    { id: "tasks", icon: "✅", title: "Daily Tasks", sub: "Set routines", color: "#F59E0B" },
+    { id: "game", icon: "🧠", title: "Memory Game", sub: "Manage memory games", color: "#7C3AED" },
+    { id: "contacts", icon: "📞", title: "Contacts", sub: "Manage contacts", color: "#2563EB" },
+    { id: "location", icon: "📍", title: "Patient Location", sub: "Live tracking", color: "#3B82F6", locked: true },
+    { id: "alerts", icon: "🚨", title: "Alerts", sub: "Fall & unsafe zones", color: "#DC2626", locked: true },
   ];
 
   return (
@@ -41,13 +41,22 @@ export default function CaregiverDashboard() {
 
         <View style={s.grid}>
           {items.map((it, i) => (
-            <View key={i} style={[s.card, { opacity: 0.5 }]} activeOpacity={1}>
+            <TouchableOpacity 
+              key={i} 
+              style={[s.card, it.locked && { opacity: 0.5 }]} 
+              activeOpacity={it.locked ? 1 : 0.8}
+              onPress={() => {
+                if (!it.locked) {
+                  router.push(`/caregiver?tab=${it.id}`);
+                }
+              }}
+            >
               <View style={[s.cIcon, { backgroundColor: it.color }]}>
                 <Text style={{ fontSize: 24 }}>{it.icon}</Text>
               </View>
               <Text style={s.cTitle}>{it.title}</Text>
-              <Text style={s.cSub}>Locked</Text>
-            </View>
+              <Text style={s.cSub}>{it.locked ? "Locked" : it.sub}</Text>
+            </TouchableOpacity>
           ))}
         </View>
         <View style={{ height: 30 }} />

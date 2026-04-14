@@ -4,7 +4,8 @@ const {
     ElderlyContact,
     ElderlyMemory,
     ElderlyInspirational,
-    ElderlyPlace
+    ElderlyPlace,
+    ElderlyTask
 } = require("../models/Elderly.model");
 
 const ok = (res, data, message = "Success", status = 200) =>
@@ -13,11 +14,49 @@ const ok = (res, data, message = "Success", status = 200) =>
 const fail = (res, message = "Server error", status = 500) =>
     res.status(status).json({ success: false, message });
 
+const Elderly = require("../models/Elderly"); // Added to resolve userId from linkedPatientId
+
+const getTargetUserId = async (user) => {
+    console.log(`[ELDERLY CONTROLLER] Resolving target for User: ${user.email}, Role: ${user.role}, LinkedId: ${user.linkedPatientId}`);
+    
+    // Caregivers and Guardians resolve target patientId from linkedPatientId
+    if ((user.role === "caregiver" || user.role === "guardian") && user.linkedPatientId) {
+        // Try to find in Elderly collection first
+        let patient = await Elderly.findById(user.linkedPatientId);
+        
+        // If not found in Elderly, maybe they are an Alzheimer patient? 
+        // (Caregivers/Guardians can sometimes be cross-linked or the ID is mistyped)
+        if (!patient) {
+            console.log(`[ELDERLY CONTROLLER] Patient not found in Elderly collection. Checking Alzheimer...`);
+            const Alzheimer = require("../models/Alzheimer");
+            patient = await Alzheimer.findById(user.linkedPatientId);
+        }
+
+        if (patient) {
+            console.log(`[ELDERLY CONTROLLER] Resolved Patient userId: ${patient.userId}`);
+            return patient.userId;
+        }
+        console.log(`[ELDERLY CONTROLLER] WARNING: LinkedPatientId ${user.linkedPatientId} could not be found in any collection.`);
+        return null;
+    }
+    
+    // If they are a patient themselves, target is their own ID
+    if (user.role === "patient") {
+        return user._id;
+    }
+
+    // Default to own ID for generic users, but log it
+    console.log(`[ELDERLY CONTROLLER] Generic user or unlinked caregiver. Using self ID: ${user._id}`);
+    return user._id;
+};
+
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 exports.getNotes = async (req, res) => {
     try {
-        const notes = await ElderlyNote.find({ userId: req.user._id }).sort({ createdAt: -1 });
+        const targetId = await getTargetUserId(req.user);
+        if (!targetId) return fail(res, "Patient profile not found", 404);
+        const notes = await ElderlyNote.find({ userId: targetId }).sort({ createdAt: -1 });
         return ok(res, notes);
     } catch (error) {
         return fail(res, error.message);
@@ -30,7 +69,9 @@ exports.createNote = async (req, res) => {
         if (!title?.trim() || !content?.trim()) {
             return fail(res, "Title and content are required.", 400);
         }
-        const note = await ElderlyNote.create({ userId: req.user._id, title, content });
+        const targetId = await getTargetUserId(req.user);
+        if (!targetId) return fail(res, "Patient profile not found", 404);
+        const note = await ElderlyNote.create({ userId: targetId, title, content });
         return ok(res, note, "Note created", 201);
     } catch (error) {
         return fail(res, error.message);
@@ -40,8 +81,9 @@ exports.createNote = async (req, res) => {
 exports.updateNote = async (req, res) => {
     try {
         const { title, content } = req.body;
+        const targetId = await getTargetUserId(req.user);
         const note = await ElderlyNote.findOneAndUpdate(
-            { _id: req.params.id, userId: req.user._id },
+            { _id: req.params.id, userId: targetId },
             { title, content },
             { new: true, runValidators: true }
         );
@@ -56,7 +98,8 @@ exports.updateNote = async (req, res) => {
 
 exports.deleteNote = async (req, res) => {
     try {
-        const note = await ElderlyNote.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
+        const targetId = await getTargetUserId(req.user);
+        const note = await ElderlyNote.findOneAndDelete({ _id: req.params.id, userId: targetId });
         if (!note) {
             return fail(res, "Note not found.", 404);
         }
@@ -68,7 +111,8 @@ exports.deleteNote = async (req, res) => {
 
 exports.getContacts = async (req, res) => {
     try {
-        const contacts = await ElderlyContact.find({ userId: req.user._id }).sort({ name: 1 });
+        const targetId = await getTargetUserId(req.user);
+        const contacts = await ElderlyContact.find({ userId: targetId }).sort({ name: 1 });
         return ok(res, contacts);
     } catch (error) {
         return fail(res, error.message);
@@ -81,7 +125,8 @@ exports.createContact = async (req, res) => {
         if (!name?.trim() || !phone?.trim()) {
             return fail(res, "Name and phone are required.", 400);
         }
-        const contact = await ElderlyContact.create({ userId: req.user._id, name, relation, phone, notes });
+        const targetId = await getTargetUserId(req.user);
+        const contact = await ElderlyContact.create({ userId: targetId, name, relation, phone, notes });
         return ok(res, contact, "Contact added", 201);
     } catch (error) {
         return fail(res, error.message);
@@ -90,8 +135,9 @@ exports.createContact = async (req, res) => {
 
 exports.updateContact = async (req, res) => {
     try {
+        const targetId = await getTargetUserId(req.user);
         const contact = await ElderlyContact.findOneAndUpdate(
-            { _id: req.params.id, userId: req.user._id },
+            { _id: req.params.id, userId: targetId },
             req.body,
             { new: true, runValidators: true }
         );
@@ -106,7 +152,8 @@ exports.updateContact = async (req, res) => {
 
 exports.deleteContact = async (req, res) => {
     try {
-        const contact = await ElderlyContact.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
+        const targetId = await getTargetUserId(req.user);
+        const contact = await ElderlyContact.findOneAndDelete({ _id: req.params.id, userId: targetId });
         if (!contact) {
             return fail(res, "Contact not found.", 404);
         }
@@ -118,7 +165,8 @@ exports.deleteContact = async (req, res) => {
 
 exports.getMemories = async (req, res) => {
     try {
-        const memories = await ElderlyMemory.find({ userId: req.user._id }).sort({ memoryDate: -1, createdAt: -1 });
+        const targetId = await getTargetUserId(req.user);
+        const memories = await ElderlyMemory.find({ userId: targetId }).sort({ memoryDate: -1, createdAt: -1 });
         return ok(res, memories);
     } catch (error) {
         return fail(res, error.message);
@@ -131,7 +179,8 @@ exports.createMemory = async (req, res) => {
         if (!title?.trim() || !story?.trim()) {
             return fail(res, "Title and story are required.", 400);
         }
-        const memory = await ElderlyMemory.create({ ...req.body, userId: req.user._id });
+        const targetId = await getTargetUserId(req.user);
+        const memory = await ElderlyMemory.create({ ...req.body, userId: targetId });
         return ok(res, memory, "Memory saved", 201);
     } catch (error) {
         return fail(res, error.message);
@@ -140,8 +189,9 @@ exports.createMemory = async (req, res) => {
 
 exports.updateMemory = async (req, res) => {
     try {
+        const targetId = await getTargetUserId(req.user);
         const memory = await ElderlyMemory.findOneAndUpdate(
-            { _id: req.params.id, userId: req.user._id },
+            { _id: req.params.id, userId: targetId },
             req.body,
             { new: true, runValidators: true }
         );
@@ -156,7 +206,8 @@ exports.updateMemory = async (req, res) => {
 
 exports.deleteMemory = async (req, res) => {
     try {
-        const memory = await ElderlyMemory.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
+        const targetId = await getTargetUserId(req.user);
+        const memory = await ElderlyMemory.findOneAndDelete({ _id: req.params.id, userId: targetId });
         if (!memory) {
             return fail(res, "Memory not found.", 404);
         }
@@ -291,4 +342,87 @@ exports.getStories = async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: "Error fetching stories" });
   }
+};
+
+// ─── 7. Tasks ───────────────────────────────────────────────
+exports.getTasks = async (req, res) => {
+    try {
+        const targetId = await getTargetUserId(req.user);
+        if (!targetId) return fail(res, "Patient profile not found", 404);
+
+        // Patients only see non-private tasks
+        const query = req.user.role === "patient" 
+            ? { userId: targetId, isPrivate: false } 
+            : { userId: targetId };
+
+        const tasks = await ElderlyTask.find(query).sort({ createdAt: -1 });
+        return ok(res, tasks);
+    } catch (error) {
+        return fail(res, error.message);
+    }
+};
+
+exports.createTask = async (req, res) => {
+    try {
+        const { text, isPrivate } = req.body;
+        if (!text?.trim()) return fail(res, "Task text is required.", 400);
+
+        const targetId = await getTargetUserId(req.user);
+        if (!targetId) return fail(res, "Patient profile not found", 404);
+
+        const task = await ElderlyTask.create({ 
+            userId: targetId, 
+            text, 
+            isPrivate: isPrivate || false 
+        });
+        return ok(res, task, "Task created", 201);
+    } catch (error) {
+        return fail(res, error.message);
+    }
+};
+
+exports.updateTask = async (req, res) => {
+    try {
+        const targetId = await getTargetUserId(req.user);
+        const task = await ElderlyTask.findOneAndUpdate(
+            { _id: req.params.id, userId: targetId },
+            req.body,
+            { new: true, runValidators: true }
+        );
+        if (!task) return fail(res, "Task not found.", 404);
+        return ok(res, task, "Task updated");
+    } catch (error) {
+        return fail(res, error.message);
+    }
+};
+
+exports.updateTaskStatus = async (req, res) => {
+    try {
+        const { status } = req.body;
+        if (!status || !["pending", "done"].includes(status)) {
+            return fail(res, "Valid status is required", 400);
+        }
+        
+        const targetId = await getTargetUserId(req.user);
+        const task = await ElderlyTask.findOneAndUpdate(
+            { _id: req.params.id, userId: targetId },
+            { status },
+            { new: true }
+        );
+        if (!task) return fail(res, "Task not found.", 404);
+        return ok(res, task, "Status updated");
+    } catch (error) {
+        return fail(res, error.message);
+    }
+};
+
+exports.deleteTask = async (req, res) => {
+    try {
+        const targetId = await getTargetUserId(req.user);
+        const task = await ElderlyTask.findOneAndDelete({ _id: req.params.id, userId: targetId });
+        if (!task) return fail(res, "Task not found.", 404);
+        return ok(res, null, "Task deleted");
+    } catch (error) {
+        return fail(res, error.message);
+    }
 };

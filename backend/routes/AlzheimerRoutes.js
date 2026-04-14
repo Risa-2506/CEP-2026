@@ -6,6 +6,7 @@ const {
   createNote,
   getNotes,
   updateNote,
+  updateNoteStatus,
   deleteNote,
 
   // Tasks
@@ -28,6 +29,7 @@ const {
 router.post("/notes", authMiddleware, createNote);
 router.get("/notes", authMiddleware, getNotes);
 router.put("/notes/:id", authMiddleware, updateNote);
+router.put("/notes/:id/status", authMiddleware, updateNoteStatus);
 router.delete("/notes/:id", authMiddleware, deleteNote);
 
 

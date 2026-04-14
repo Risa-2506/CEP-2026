@@ -86,11 +86,22 @@ const placeSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
+const taskSchema = new mongoose.Schema(
+  {
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    text: { type: String, required: true, trim: true },
+    status: { type: String, enum: ["pending", "done"], default: "pending" },
+    isPrivate: { type: Boolean, default: false } // Hidden from the patient
+  },
+  { timestamps: true }
+);
+
 const ElderlyNote = mongoose.model("ElderlyNote", noteSchema);
 const ElderlyContact = mongoose.model("ElderlyContact", contactSchema);
 const ElderlyMemory = mongoose.model("ElderlyMemory", memorySchema);
 const ElderlyInspirational = mongoose.model("ElderlyInspirational", inspirationalSchema);
 const ElderlyPlace = mongoose.model("ElderlyPlace", placeSchema);
+const ElderlyTask = mongoose.model("ElderlyTask", taskSchema);
 
 module.exports = {
     PLACE_CATEGORIES,
@@ -98,5 +109,6 @@ module.exports = {
     ElderlyContact,
     ElderlyMemory,
     ElderlyInspirational,
-    ElderlyPlace
+    ElderlyPlace,
+    ElderlyTask
 };

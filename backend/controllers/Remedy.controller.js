@@ -6,7 +6,7 @@ async function fetchRemedy(req, res, next) {
         const data = await Remedy.find({});
 
         if (data.length === 0) {
-            return res.json({ message: "No remedies found" });
+            return res.status(200).json([]);
         }
 
         const formattedData = data.map(item => ({
@@ -68,9 +68,7 @@ async function searchRemedies(req, res, next) {
         }
 
         if (data.length === 0) {
-            return res.status(404).json({
-                message: "No remedies found"
-            });
+            return res.status(200).json([]);
         }
         const formattedData = data.map(item => ({
             id: item._id,

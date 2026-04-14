@@ -60,11 +60,8 @@ export default function Home() {
       case "alzheimer":
       case "elderly":
         if (!isLoggedIn) {
-          // GUEST FLOW: Go straight to setup
-          router.push(feature === "elderly" ? "home/elderly-setup" : "home/alzheimer-setup");
+          router.push(feature === "elderly" ? "/home/elderly-setup" : "/home/alzheimer-setup");
         } else {
-          // LOGGED IN FLOW:
-          // 1. Check for specific module profile
           try {
             const endpoint = feature === "elderly" ? "/elderly/check" : "/alzheimer/check";
             const res = await fetch(`${BASE_URL}${endpoint}`, {
@@ -73,27 +70,12 @@ export default function Home() {
             const data = await res.json();
 
             if (data.hasProfile) {
-              // User is a patient for this module
-              router.push(feature === "elderly" ? "home/elderlyDashboard" : "home/alzheimerDashboard");
+              router.push(feature === "elderly" ? "/elderly" : "/alzheimer");
             } else {
-              // Check if they are a caregiver or guardian for this module
-              // If they are a generic caregiver/guardian, we still want to let them see their own patient setup if they want
-              // OR check if they have a relationship in this specific module.
-              
-              const userEmail = user.email.toLowerCase().trim();
-              const profile = data.profile; // This might be null if hasProfile is false but they could still be caregiver
-              
-              // We need to re-check if they are a caregiver/guardian for this specific module
-              // The backend '/check' endpoint only returns if they are the PATIENT (userId match)
-              
-              // For now, let's just go to setup if not a patient, 
-              // but we should probably check caregiver/guardian status too.
-              // However, the user said: "If no → show setup form"
-              router.push(feature === "elderly" ? "home/elderly-setup" : "home/alzheimer-setup");
+              router.push(feature === "elderly" ? "/home/elderly-setup" : "/home/alzheimer-setup");
             }
           } catch (error) {
-            console.error("Check error:", error);
-            router.push(feature === "elderly" ? "home/elderly-setup" : "home/alzheimer-setup");
+            router.push(feature === "elderly" ? "/home/elderly-setup" : "/home/alzheimer-setup");
           }
         }
         break;
@@ -143,18 +125,37 @@ export default function Home() {
     },
   ];
 
-  // Check if user is caregiver or guardian and show their dashboard
+  // Auth-aware navigation to specific dashboards
   const showRoleDashboard = () => {
     if (user?.role === "caregiver") {
-      router.push("home/caregiverDashboard");
+      router.push("/caregiver");
     } else if (user?.role === "guardian") {
-      router.push("home/guardianDashboard");
+      router.push("/guardian");
     } else if (user?.role === "patient") {
       if (user?.linkedPatientType === "elderly") {
-        router.push("home/elderlyDashboard");
+        router.push("/elderly");
       } else {
-        router.push("home/alzheimerDashboard");
+        router.push("/alzheimer");
       }
+    } else {
+      Alert.alert("No Dashboard", "You are not currently linked as a patient, caregiver, or guardian. Please set up a profile first.");
+    }
+  };
+
+  const handleSyncRole = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/auth/sync-role`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        Alert.alert("Success", "Your profile has been synchronized. If you are a caregiver, your dashboard should now be available.");
+      } else {
+        Alert.alert("Sync Error", data.message || "Could not sync role");
+      }
+    } catch (e) {
+      Alert.alert("Error", "Failed to reach server");
     }
   };
 
@@ -180,20 +181,25 @@ export default function Home() {
             </View>
 
             {isLoggedIn ? (
-              <TouchableOpacity style={styles.avatarCircle} onPress={() => {
-                Alert.alert(
-                  "Account",
-                  `${user?.name}\n${user?.email}\nRole: ${user?.role}`,
-                  [
-                    { text: "Cancel", style: "cancel" },
-                    { text: "Logout", onPress: logout, style: "destructive" },
-                  ]
-                );
-              }}>
-                <Text style={styles.avatarText}>
-                  {(user?.name || "U").charAt(0).toUpperCase()}
-                </Text>
-              </TouchableOpacity>
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                <TouchableOpacity style={styles.syncBtn} onPress={handleSyncRole}>
+                  <Text style={styles.syncBtnText}>🔄 Sync</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.avatarCircle} onPress={() => {
+                  Alert.alert(
+                    "Account",
+                    `${user?.name}\n${user?.email}\nRole: ${user?.role}\nLinked to: ${user?.linkedPatientName || 'None'}`,
+                    [
+                      { text: "Cancel", style: "cancel" },
+                      { text: "Logout", onPress: logout, style: "destructive" },
+                    ]
+                  );
+                }}>
+                  <Text style={styles.avatarText}>
+                    {(user?.name || "U").charAt(0).toUpperCase()}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             ) : (
               <TouchableOpacity
                 style={styles.loginChip}
@@ -317,6 +323,19 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 18,
     fontWeight: "700",
+  },
+  syncBtn: {
+    backgroundColor: "rgba(255,255,255,0.15)",
+    paddingHorizontal: 12,
+    borderRadius: 15,
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
+  },
+  syncBtnText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600",
   },
   loginChip: {
     backgroundColor: "rgba(255,255,255,0.15)",

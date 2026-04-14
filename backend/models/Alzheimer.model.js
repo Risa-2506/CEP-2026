@@ -30,6 +30,12 @@ const noteSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+
+  status: {
+    type: String,
+    enum: ["pending", "acknowledged", "completed"],
+    default: "pending",
+  },
 });
 
 //Taskschema
@@ -71,6 +77,11 @@ const taskSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now,
+  },
+
+  isPrivate: {
+    type: Boolean,
+    default: false,
   },
 });
 

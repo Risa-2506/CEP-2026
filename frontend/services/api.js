@@ -2,7 +2,7 @@ const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://10.227.184.79:5000/r
 // ================= CONFIG =================
 
 // 🔥 PUT YOUR LOCAL IP HERE (IMPORTANT)
-const LOCAL_IP = "192.168.1.33"; // Updated to match Expo IP
+const LOCAL_IP = "192.168.1.37"; // Updated to match Expo IP
 
 const configuredBase = (process.env.EXPO_PUBLIC_API_URL || "").replace(/\/$/, "");
 
@@ -147,15 +147,53 @@ export const placesAPI = {
     }
 };
 
+export const elderlyTaskAPI = {
+    getAll: () => request("GET", "/elderly/tasks"),
+    create: (body) => request("POST", "/elderly/tasks", body),
+    update: (id, body) => request("PUT", `/elderly/tasks/${id}`, body),
+    updateStatus: (id, status) => request("PUT", `/elderly/tasks/${id}/status`, { status }),
+    delete: (id) => request("DELETE", `/elderly/tasks/${id}`)
+};
+
 
 // ================= EXPORT =================
 
+export const alzheimerAPI = {
+    notes: {
+        getAll: () => request("GET", "/alzheimer/notes"),
+        create: (body) => request("POST", "/alzheimer/notes", body),
+        update: (id, body) => request("PUT", `/alzheimer/notes/${id}`, body),
+        updateStatus: (id, status) => request("PUT", `/alzheimer/notes/${id}/status`, { status }),
+        delete: (id) => request("DELETE", `/alzheimer/notes/${id}`)
+    },
+    tasks: {
+        getAll: () => request("GET", "/alzheimer/tasks"),
+        create: (body) => request("POST", "/alzheimer/tasks", body),
+        update: (id, body) => request("PUT", `/alzheimer/tasks/${id}`, body),
+        updateStatus: (id, status) => request("PUT", `/alzheimer/tasks/${id}/status`, { status }),
+        delete: (id) => request("DELETE", `/alzheimer/tasks/${id}`)
+    },
+    game: {
+        getAllQuestions: () => request("GET", "/alzheimer/game"),
+        createQuestion: (body) => request("POST", "/alzheimer/game", body),
+        submitAnswers: (answers) => request("POST", "/alzheimer/game/submit", { answers }),
+        getResults: () => request("GET", "/alzheimer/game/results")
+    },
+    contacts: {
+        getAll: () => request("GET", "/alzheimer/contacts"),
+        create: (body) => request("POST", "/alzheimer/contacts", body),
+        update: (id, body) => request("PUT", `/alzheimer/contacts/${id}`, body),
+        delete: (id) => request("DELETE", `/alzheimer/contacts/${id}`)
+    }
+};
+
 export const elderlyAPI = {
-        notepad: notepadAPI,
-        contacts: contactAPI,
-        memories: memoryAPI,
-        inspirationals: inspirationalAPI,
-        places: placesAPI
+    notepad: notepadAPI,
+    contacts: contactAPI,
+    memories: memoryAPI,
+    inspirationals: inspirationalAPI,
+    places: placesAPI,
+    tasks: elderlyTaskAPI
 };
 
 export const API_BASE_URL = API_ROOT;

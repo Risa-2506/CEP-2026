@@ -60,8 +60,17 @@ router.get("/places", ctrl.getNearbyPlaces);
 router.post("/places/nearby", ctrl.getNearbyPlaces);
 router.post("/places", ctrl.addPlace);
 
-// ─── 6. Stories (for swipe cards) ───────────────────────────
 // GET /api/elderly/stories → get motivational stories
 router.get("/stories", ctrl.getStories);
+
+// ─── 7. Tasks ───────────────────────────────────────────────
+// GET    /api/elderly/tasks
+// POST   /api/elderly/tasks
+// PUT    /api/elderly/tasks/:id/status
+// DELETE /api/elderly/tasks/:id
+router.get("/tasks", ctrl.getTasks);
+router.post("/tasks", ctrl.createTask);
+router.put("/tasks/:id/status", ctrl.updateTaskStatus);
+router.delete("/tasks/:id", ctrl.deleteTask);
 
 module.exports = router;
