@@ -77,13 +77,38 @@ export default function ElderlySetup() {
       return;
     }
 
+    const validatePhone = (num) => num.replace(/[^0-9]/g, '').length === 10;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
     if (!isLoggedIn) {
         if (!email.trim() || !password.trim()) {
             Alert.alert("Error", "Email and Password are required for account creation");
             return;
         }
+        if (!emailRegex.test(email.trim())) {
+            Alert.alert("Error", "Please enter a valid patient email address");
+            return;
+        }
         if (password.length < 6) {
             Alert.alert("Error", "Password must be at least 6 characters");
+            return;
+        }
+    }
+
+    if (caregiverPhone && !validatePhone(caregiverPhone)) {
+        Alert.alert("Error", "Caregiver phone must be a valid 10-digit number");
+        return;
+    }
+
+    if (caregiverEmail && !emailRegex.test(caregiverEmail.trim())) {
+        Alert.alert("Error", "Please enter a valid caregiver email address");
+        return;
+    }
+
+    // Validate Guardians
+    for (const g of guardians) {
+        if (g.phone && !validatePhone(g.phone)) {
+            Alert.alert("Error", `Guardian ${g.name || ''} has an invalid phone number. Must be 10 digits.`);
             return;
         }
     }
@@ -95,17 +120,17 @@ export default function ElderlySetup() {
         age: age ? parseInt(age) : null,
         caregiver: {
           name: caregiverName.trim(),
-          phone: caregiverPhone.trim(),
+          phone: caregiverPhone.replace(/[^0-9]/g, ''),
           email: caregiverEmail.trim().toLowerCase(),
         },
-        guardians: guardians.filter((g) => g.name.trim() || g.email.trim()).map((g) => ({
+        guardians: guardians.filter((g) => g.name.trim() || g.phone.trim()).map((g) => ({
           name: g.name.trim(),
-          phone: g.phone.trim(),
+          phone: g.phone.replace(/[^0-9]/g, ''),
           email: g.email.trim().toLowerCase(),
         })),
         emergencyContacts: emergencyContacts.filter((e) => e.name.trim() || e.phone.trim()).map((e) => ({
           name: e.name.trim(),
-          phone: e.phone.trim(),
+          phone: e.phone.replace(/[^0-9]/g, ''),
           relationship: e.relationship.trim(),
         })),
       };

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View, SafeAreaView, Platform, StatusBar, TouchableOpacity, Image, TextInput, Alert } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View, SafeAreaView, Platform, StatusBar, TouchableOpacity, Image, TextInput, Alert, KeyboardAvoidingView } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { alzheimerAPI } from "../services/api";
 
@@ -284,11 +284,73 @@ export default function AlzheimerPatient() {
     );
   };
 
+  // Contacts management
+  const [contactForm, setContactForm] = useState({ name: "", phone: "", relation: "" });
+
+  const addContact = async () => {
+    if (!contactForm.name.trim() || !contactForm.phone.trim()) {
+      Alert.alert("Error", "Name and Phone are required.");
+      return;
+    }
+    try {
+      await alzheimerAPI.contacts.create(contactForm);
+      setContactForm({ name: "", phone: "", relation: "" });
+      await loadAll();
+    } catch (e) {
+      Alert.alert("Error", "Failed to add contact.");
+    }
+  };
+
+  const deleteContact = async (id) => {
+    Alert.alert("Delete Contact", "Remove this person from your contacts?", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Delete", style: "destructive", onPress: async () => {
+        try {
+          await alzheimerAPI.contacts.delete(id);
+          await loadAll();
+        } catch (e) {
+          Alert.alert("Error", "Failed to delete contact.");
+        }
+      }}
+    ]);
+  };
+
   const renderContacts = () => (
     <View>
       <Text style={styles.sectionTitle}>My Helpful People</Text>
+      
+      <Card style={styles.addCard}>
+        <View style={{ flex: 1, gap: 8 }}>
+          <TextInput
+            style={[styles.taskInput, { height: 40, borderBottomWidth: 1, borderColor: COLORS.border }]}
+            placeholder="Name..."
+            value={contactForm.name}
+            onChangeText={(v) => setContactForm({ ...contactForm, name: v })}
+            placeholderTextColor={COLORS.muted}
+          />
+          <TextInput
+            style={[styles.taskInput, { height: 40, borderBottomWidth: 1, borderColor: COLORS.border }]}
+            placeholder="Phone..."
+            value={contactForm.phone}
+            keyboardType="phone-pad"
+            onChangeText={(v) => setContactForm({ ...contactForm, phone: v })}
+            placeholderTextColor={COLORS.muted}
+          />
+          <TextInput
+            style={[styles.taskInput, { height: 40 }]}
+            placeholder="Relation (e.g. Doctor, Son)..."
+            value={contactForm.relation}
+            onChangeText={(v) => setContactForm({ ...contactForm, relation: v })}
+            placeholderTextColor={COLORS.muted}
+          />
+        </View>
+        <TouchableOpacity style={styles.addButton} onPress={addContact}>
+          <Text style={styles.addButtonText}>+</Text>
+        </TouchableOpacity>
+      </Card>
+
       {contacts.length ? contacts.map(c => (
-        <Card key={c._id}>
+        <Card key={c._id} style={{ marginBottom: 12 }}>
           <View style={styles.taskRow}>
             <View style={styles.contactIcon}>
               <Text style={{ fontSize: 24 }}>👤</Text>
@@ -298,8 +360,8 @@ export default function AlzheimerPatient() {
               <Text style={styles.contactRelation}>{c.relation}</Text>
               <Text style={styles.contactPhone}>{c.phone}</Text>
             </View>
-            <TouchableOpacity style={styles.callBtn}>
-              <Text style={styles.callText}>Call</Text>
+            <TouchableOpacity onPress={() => deleteContact(c._id)} style={{ padding: 10 }}>
+              <Text style={{ fontSize: 18 }}>🗑️</Text>
             </TouchableOpacity>
           </View>
         </Card>
@@ -344,13 +406,24 @@ export default function AlzheimerPatient() {
         </ScrollView>
       </View>
 
-      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        {loading ? (
-          <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 50 }} />
-        ) : (
-          renderContent()
-        )}
-      </ScrollView>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
+      >
+        <ScrollView 
+          style={styles.container} 
+          contentContainerStyle={{ paddingBottom: 60 }} 
+          keyboardShouldPersistTaps="handled" 
+          showsVerticalScrollIndicator={false}
+        >
+          {loading ? (
+            <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 50 }} />
+          ) : (
+            renderContent()
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

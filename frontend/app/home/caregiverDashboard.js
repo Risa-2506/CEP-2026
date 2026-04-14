@@ -7,18 +7,67 @@ export default function CaregiverDashboard() {
   const router = useRouter();
   const { user } = useAuth();
 
+  const isElderly = user?.linkedPatientType === "elderly";
+
   const items = [
-    { id: "notes", icon: "📋", title: "Care Notes", sub: "Add & view notes", color: "#16A34A" },
-    { id: "tasks", icon: "✅", title: "Daily Tasks", sub: "Set routines", color: "#F59E0B" },
-    { id: "game", icon: "🧠", title: "Memory Game", sub: "Manage memory games", color: "#7C3AED" },
-    { id: "contacts", icon: "📞", title: "Contacts", sub: "Manage contacts", color: "#2563EB" },
-    { id: "location", icon: "📍", title: "Patient Location", sub: "Live tracking", color: "#3B82F6", locked: true },
-    { id: "alerts", icon: "🚨", title: "Alerts", sub: "Fall & unsafe zones", color: "#DC2626", locked: true },
+    { 
+      id: "notes", 
+      icon: "📋", 
+      title: "Care Notes", 
+      sub: "Instructions & Daily records", 
+      color: "#16A34A" 
+    },
+    { 
+      id: "tasks", 
+      icon: "✅", 
+      title: isElderly ? "Routines" : "Shared Routine", 
+      sub: "Daily care tasks", 
+      color: "#F59E0B" 
+    },
+    ...(isElderly ? [] : [
+      { 
+        id: "private", 
+        icon: "🔒", 
+        title: "Private Planning", 
+        sub: "Personal caregiver notes", 
+        color: "#BE185D" 
+      }
+    ]),
+    { 
+      id: isElderly ? "memories" : "game", 
+      icon: isElderly ? "📸" : "🧠", 
+      title: isElderly ? "Memories" : "Memory Manager", 
+      sub: isElderly ? "Patient memories" : "Game results", 
+      color: "#7C3AED" 
+    },
+    { 
+      id: "contacts", 
+      icon: "📞", 
+      title: "Emergency Contacts", 
+      sub: "Authorized support", 
+      color: "#2563EB" 
+    },
+    { 
+      id: "location", 
+      icon: "📍", 
+      title: "Patient Location", 
+      sub: "Live tracking", 
+      color: "#3B82F6", 
+      locked: true 
+    },
+    { 
+      id: "alerts", 
+      icon: "🚨", 
+      title: "Alerts", 
+      sub: "Fall & Safety logs", 
+      color: "#DC2626", 
+      locked: true 
+    },
   ];
 
   return (
     <View style={s.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 30 }}>
         <View style={s.header}>
           <TouchableOpacity onPress={() => router.replace("/")} style={s.back}>
             <Text style={s.backT}>← Home</Text>

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, SafeAreaView, Platform, StatusBar } from "react-native";
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, SafeAreaView, Platform, StatusBar, KeyboardAvoidingView } from "react-native";
 import Swiper from "react-native-deck-swiper";
 import { elderlyAPI } from "../services/api";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -37,7 +37,7 @@ const CITY_OPTIONS = [
 ];
 
 const TABS = [
-  { key: "notepad", label: "Notes" },
+  { key: "notepad", label: "Care Notes" },
   { key: "routines", label: "Routines" },
   { key: "contacts", label: "Contacts" },
   { key: "memory", label: "Memories" },
@@ -130,36 +130,29 @@ export default function Elderly() {
   const renderNotepad = () => (
     <View style={styles.recordSection}>
       <View style={styles.sectionIntro}>
-        <Text style={styles.sectionTitle}>My Notes</Text>
-        <Text style={styles.sectionSubtext}>Capture reminders, thoughts, and important details.</Text>
+        <Text style={styles.sectionTitle}>Care Notes</Text>
+        <Text style={styles.sectionSubtext}>Important instructions and records from your caregiver.</Text>
       </View>
 
-      <Card style={styles.formCard}>
-        <Input placeholder="Title"
-          value={forms.note.title}
-          onChangeText={(v) => setField("note", "title", v)} tintColor={COLORS.primary} />
-        <Input multiline placeholder="Write note..."
-          value={forms.note.content}
-          onChangeText={(v) => setField("note", "content", v)} />
-        <Button label="Save Note" onPress={async () => {
-          await elderlyAPI.notepad.create(forms.note);
-          setForms((prev) => ({ ...prev, note: { title: "", content: "" } }));
-          loadAll();
-        }} />
-      </Card>
-
-      {notes.map((n) => (
-        <Card key={n._id} style={styles.listCard}>
-          <View style={styles.listHeaderRow}>
-            <Text style={styles.listTitle}>{n.title}</Text>
-            <Pressable style={styles.deletePill} onPress={async () => { await elderlyAPI.notepad.delete(n._id); loadAll(); }}>
-              <Text style={styles.deletePillText}>Delete</Text>
-            </Pressable>
-          </View>
-          <Text style={styles.listText}>{n.content}</Text>
-          <Text style={styles.itemDate}>{new Date(n.createdAt).toLocaleDateString()}</Text>
+      {notes.length === 0 ? (
+        <Card style={styles.emptyStateBox}>
+          <Text style={styles.emptyStateTitle}>No notes yet</Text>
+          <Text style={styles.emptyStateText}>Your caregiver hasn't posted any notes for you yet.</Text>
         </Card>
-      ))}
+      ) : (
+        notes.map((n) => (
+          <Card key={n._id} style={styles.listCard}>
+            <View style={styles.listHeaderRow}>
+              <Text style={styles.listTitle}>{n.title}</Text>
+              <View style={[styles.statusPill, { backgroundColor: COLORS.primary }]}>
+                <Text style={styles.statusPillText}>INSTRUCTION</Text>
+              </View>
+            </View>
+            <Text style={styles.listText}>{n.content}</Text>
+            <Text style={styles.itemDate}>{new Date(n.createdAt).toLocaleDateString()}</Text>
+          </Card>
+        ))
+      )}
     </View>
   );
 
@@ -169,31 +162,76 @@ export default function Elderly() {
     loadAll();
   };
 
+  const addTask = async () => {
+    if (!forms.task?.trim()) {
+      return; 
+    }
+    try {
+      await elderlyAPI.tasks.create({ text: forms.task });
+      setForms(prev => ({ ...prev, task: "" }));
+      loadAll();
+    } catch (e) {
+      console.log("Add task error", e);
+    }
+  };
+
+  const deleteTask = async (id) => {
+    try {
+      await elderlyAPI.tasks.delete(id);
+      loadAll();
+    } catch (e) {
+      console.log("Delete task error", e);
+    }
+  };
+
   const renderTasks = () => (
     <View style={styles.recordSection}>
       <View style={styles.sectionIntro}>
         <Text style={styles.sectionTitle}>Daily Routine</Text>
-        <Text style={styles.sectionSubtext}>Check off tasks as you complete them.</Text>
+        <Text style={styles.sectionSubtext}>Add and manage your daily tasks. Shared with caregiver.</Text>
       </View>
+
+      <Card style={styles.formCard}>
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <TextInput 
+            style={[styles.input, { flex: 1, marginBottom: 0 }]} 
+            placeholder="New routine task..." 
+            value={forms.task}
+            onChangeText={(v) => setForms(prev => ({ ...prev, task: v }))}
+          />
+          <Pressable 
+            style={[styles.btn, { paddingHorizontal: 15, justifyContent: 'center' }, !forms.task?.trim() && { opacity: 0.5 }]} 
+            onPress={addTask}
+            disabled={!forms.task?.trim()}
+          >
+            <Text style={styles.btnText}>Add</Text>
+          </Pressable>
+        </View>
+      </Card>
 
       {tasks.length === 0 ? (
         <Card style={styles.emptyStateBox}>
-          <Text style={styles.emptyStateTitle}>No tasks yet</Text>
-          <Text style={styles.emptyStateText}>Your caregiver hasn't added any routines for you today.</Text>
+          <Text style={styles.emptyStateTitle}>No routine tasks</Text>
+          <Text style={styles.emptyStateText}>Add a task above or wait for your caregiver to set your routine.</Text>
         </Card>
       ) : (
         tasks.map((t) => (
-          <Pressable key={t._id} onPress={() => toggleTask(t)}>
-            <Card style={[styles.listCard, t.status === "done" && { backgroundColor: "#F0FDFA", borderColor: "#5EEAD4" }]}>
-              <View style={styles.listHeaderRow}>
+          <Card key={t._id} style={[styles.listCard, t.status === "done" && { backgroundColor: "#F0FDFA", borderColor: "#5EEAD4" }]}>
+            <View style={styles.listHeaderRow}>
+              <Pressable onPress={() => toggleTask(t)} style={{ flex: 1 }}>
                 <Text style={[styles.listTitle, t.status === "done" && styles.textStrike]}>{t.text}</Text>
+              </Pressable>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <View style={[styles.statusPill, { backgroundColor: t.status === "done" ? "#10B981" : "#F59E0B" }]}>
                     <Text style={styles.statusPillText}>{t.status === "done" ? "DONE" : "PENDING"}</Text>
                 </View>
+                <Pressable onPress={() => deleteTask(t._id)}>
+                  <Text style={{ fontSize: 18 }}>🗑️</Text>
+                </Pressable>
               </View>
-              <Text style={styles.subtext}>Tap to toggle status</Text>
-            </Card>
-          </Pressable>
+            </View>
+            <Text style={styles.subtext}>Tap text to toggle status</Text>
+          </Card>
         ))
       )}
     </View>
@@ -208,12 +246,20 @@ export default function Elderly() {
 
       <Card style={styles.formCard}>
         <Input placeholder="Name" value={forms.contact.name} onChangeText={(v) => setField("contact", "name", v)} />
-        <Input placeholder="Phone" value={forms.contact.phone} onChangeText={(v) => setField("contact", "phone", v)} />
-        <Button label="Add Contact" onPress={async () => {
-          await elderlyAPI.contacts.create(forms.contact);
-          setForms((prev) => ({ ...prev, contact: { name: "", phone: "" } }));
-          loadAll();
-        }} />
+        <Input placeholder="Phone" keyboardType="phone-pad" value={forms.contact.phone} onChangeText={(v) => setField("contact", "phone", v)} />
+        <Button 
+          label="Add Contact" 
+          onPress={async () => {
+            const phone = forms.contact.phone.replace(/[^0-9]/g, '');
+            if (!forms.contact.name.trim() || phone.length !== 10) {
+              Alert.alert("Error", "Please enter a valid 10-digit phone number.");
+              return;
+            }
+            await elderlyAPI.contacts.create({ ...forms.contact, phone });
+            setForms((prev) => ({ ...prev, contact: { name: "", phone: "" } }));
+            loadAll();
+          }} 
+        />
       </Card>
 
       {contacts.map((c) => (
@@ -241,6 +287,7 @@ export default function Elderly() {
         <Input placeholder="Title" value={forms.memory.title} onChangeText={(v) => setField("memory", "title", v)} />
         <Input multiline placeholder="Story" value={forms.memory.story} onChangeText={(v) => setField("memory", "story", v)} />
         <Button label="Save Memory" onPress={async () => {
+          if (!forms.memory.title.trim() || !forms.memory.story.trim()) return;
           await elderlyAPI.memories.create(forms.memory);
           setForms((prev) => ({ ...prev, memory: { title: "", story: "" } }));
           loadAll();
@@ -324,43 +371,49 @@ export default function Elderly() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView style={styles.container}>
-        <View style={styles.header}>
-          <Pressable onPress={() => router.replace("/")} style={styles.backButton}>
-            <Text style={styles.backButtonIcon}>← Home</Text>
-          </Pressable>
-          <View style={styles.headerTextContainer}>
-            <Text style={styles.headerTitle}>ElderCare</Text>
-            <Text style={styles.headerSub}>Health • Comfort • Care</Text>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
+      >
+        <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 60 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <View style={styles.header}>
+            <Pressable onPress={() => router.replace("/")} style={styles.backButton}>
+              <Text style={styles.backButtonIcon}>← Home</Text>
+            </Pressable>
+            <View style={styles.headerTextContainer}>
+              <Text style={styles.headerTitle}>ElderCare</Text>
+              <Text style={styles.headerSub}>Health • Comfort • Care</Text>
+            </View>
           </View>
-        </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabs}>
-        {TABS.map((tab) => (
-          <Pressable
-            key={tab.key}
-            onPress={() => setActiveTab(tab.key)}
-            style={[
-              styles.tab,
-              activeTab === tab.key && styles.tabActive
-            ]}
-          >
-            <Text style={[
-              styles.tabText,
-              activeTab === tab.key && styles.tabTextActive
-            ]}>
-              {tab.label}
-            </Text>
-          </Pressable>
-        ))}
-      </ScrollView>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabs}>
+            {TABS.map((tab) => (
+              <Pressable
+                key={tab.key}
+                onPress={() => setActiveTab(tab.key)}
+                style={[
+                  styles.tab,
+                  activeTab === tab.key && styles.tabActive
+                ]}
+              >
+                <Text style={[
+                  styles.tabText,
+                  activeTab === tab.key && styles.tabTextActive
+                ]}>
+                  {tab.label}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
 
-      {loading ? (
-        <ActivityIndicator size="large" color={COLORS.primary} />
-      ) : (
-        <View style={{ marginTop: 10 }}>{renderContent()}</View>
-      )}
-      </ScrollView>
+          {loading ? (
+            <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 50 }} />
+          ) : (
+            <View style={{ marginTop: 10 }}>{renderContent()}</View>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Story Modal */}
       <Modal visible={!!selectedStory} transparent animationType="fade" onRequestClose={() => setSelectedStory(null)}>

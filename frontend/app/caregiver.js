@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View, SafeAreaView, Platform, StatusBar, TouchableOpacity, TextInput, Alert, Image } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View, SafeAreaView, Platform, StatusBar, TouchableOpacity, TextInput, Alert, Image, KeyboardAvoidingView } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { alzheimerAPI, elderlyAPI } from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -14,7 +14,7 @@ const ALZ_TABS = [
 ];
 
 const ELD_TABS = [
-  { key: "notes", label: "Notepad" },
+  { key: "notes", label: "Care Notes" },
   { key: "tasks", label: "Routines" },
   { key: "contacts", label: "Contacts" },
   { key: "memories", label: "Memories" }
@@ -152,7 +152,10 @@ export default function CaregiverPanel() {
   };
 
   const addContact = async () => {
-    if (!contactForm.name || !contactForm.phone) return;
+    if (!contactForm.name.trim() || !contactForm.phone.trim()) {
+      Alert.alert("Error", "Name and Phone are required.");
+      return;
+    }
     if (isElderly) await elderlyAPI.contacts.create(contactForm);
     else await alzheimerAPI.contacts.create(contactForm);
     setContactForm({ name: "", phone: "", relation: "" });
@@ -166,7 +169,10 @@ export default function CaregiverPanel() {
   };
 
   const addMemory = async () => {
-    if (!memoryForm.title || !memoryForm.story) return;
+    if (!memoryForm.title.trim() || !memoryForm.story.trim()) {
+      Alert.alert("Error", "Title and Story are required.");
+      return;
+    }
     await elderlyAPI.memories.create(memoryForm);
     setMemoryForm({ title: "", story: "" });
     loadAll();
@@ -371,14 +377,15 @@ export default function CaregiverPanel() {
   const renderEldNotes = () => (
     <View>
       <Card style={styles.formCard}>
-        <Text style={styles.formTitle}>Elderly Patient Notepad</Text>
-        <Input placeholder="Entry Title" value={noteTitle} onChangeText={setNoteTitle} />
-        <Input multiline placeholder="Type note content here..." value={noteText} onChangeText={setNoteText} />
+        <Text style={styles.formTitle}>Care Notes Instructions</Text>
+        <Text style={styles.subText}>Send daily instructions or reminders to the patient.</Text>
+        <Input placeholder="Note Title (e.g. Morning Medicine)" value={noteTitle} onChangeText={setNoteTitle} />
+        <Input multiline placeholder="Type detailed instructions here..." value={noteText} onChangeText={setNoteText} />
         <TouchableOpacity style={styles.btnPrimary} onPress={addNote}>
-          <Text style={styles.btnText}>Save Entry</Text>
+          <Text style={styles.btnText}>Post to Care Notes</Text>
         </TouchableOpacity>
       </Card>
-      <Text style={styles.listSectionTitle}>Recent Entries</Text>
+      <Text style={styles.listSectionTitle}>Instruction History</Text>
       {notes.map(n => (
         <Card key={n._id} style={styles.listItem}>
           <View style={{ flex: 1 }}>
@@ -431,13 +438,14 @@ export default function CaregiverPanel() {
   const renderEldTasks = () => (
     <View>
       <Card style={styles.formCard}>
-        <Text style={styles.formTitle}>Care Routines & Tasks</Text>
-        <Input placeholder="Task description (e.g. Evening walk)" value={eldTaskText} onChangeText={setEldTaskText} />
+        <Text style={styles.formTitle}>Shared Care Routines</Text>
+        <Text style={styles.subText}>Add tasks that the patient should complete. Synced in real-time.</Text>
+        <Input placeholder="Routine task (e.g. Evening walk)" value={eldTaskText} onChangeText={setEldTaskText} />
         <TouchableOpacity style={styles.btnPrimary} onPress={addEldTask}>
-            <Text style={styles.btnText}>Set Routine</Text>
+            <Text style={styles.btnText}>Add to Routine</Text>
         </TouchableOpacity>
       </Card>
-      <Text style={styles.listSectionTitle}>Current Routines</Text>
+      <Text style={styles.listSectionTitle}>Current Patient Routines</Text>
       {eldTasks.map(t => (
         <Card key={t._id} style={styles.listItem}>
           <View style={{ flex: 1 }}>
@@ -507,17 +515,28 @@ export default function CaregiverPanel() {
         </ScrollView>
       </View>
 
-      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <TouchableOpacity style={styles.refreshBtn} onPress={loadAll}>
-          <Text style={styles.refreshBtnText}>🔄 Refresh Data</Text>
-        </TouchableOpacity>
-        
-        {loading ? (
-          <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 50 }} />
-        ) : (
-          renderContent()
-        )}
-      </ScrollView>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
+      >
+        <ScrollView 
+          style={styles.container} 
+          contentContainerStyle={{ paddingBottom: 60 }} 
+          keyboardShouldPersistTaps="handled" 
+          showsVerticalScrollIndicator={false}
+        >
+          <TouchableOpacity style={styles.refreshBtn} onPress={loadAll}>
+            <Text style={styles.refreshBtnText}>🔄 Refresh Data</Text>
+          </TouchableOpacity>
+          
+          {loading ? (
+            <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 50 }} />
+          ) : (
+            renderContent()
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

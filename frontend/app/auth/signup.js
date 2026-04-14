@@ -63,6 +63,13 @@ export default function Signup() {
       return;
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setError("Please enter a valid email address");
+      shakeError();
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       shakeError();
