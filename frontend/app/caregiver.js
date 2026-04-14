@@ -5,12 +5,17 @@ import { alzheimerAPI, elderlyAPI } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import * as ImagePicker from 'expo-image-picker';
 
+import * as Location from 'expo-location';
+import MapView, { Circle, Marker } from "react-native-maps";
+
 const ALZ_TABS = [
   { key: "notes", label: "Care Notes" },
   { key: "tasks", label: "Shared Routine" },
   { key: "private", label: "My Planning (Private)" },
   { key: "game", label: "Memory Manager" },
-  { key: "contacts", label: "Contacts" }
+  { key: "contacts", label: "Contacts" },
+  { key: "location", label: "Geofence Setup" },
+  { key: "alerts", label: "Alert Logs" }
 ];
 
 const ELD_TABS = [
@@ -50,8 +55,9 @@ export default function CaregiverPanel() {
   const { user } = useAuth();
   const isElderly = user?.linkedPatientType === "elderly";
   const tabs = isElderly ? ELD_TABS : ALZ_TABS;
+  const isGuardian = user?.role === "guardian";
 
-  const [activeTab, setActiveTab] = useState(params.tab || "notes");
+  const [activeTab, setActiveTab] = useState(params.tab || (isGuardian ? "alerts" : "notes"));
   const [loading, setLoading] = useState(false);
 
   // Data states
@@ -72,6 +78,16 @@ export default function CaregiverPanel() {
   const [gameForm, setGameForm] = useState({ question: "", image: "", opt1: "", opt2: "", opt3: "", opt4: "", correct: "" });
   const [memoryForm, setMemoryForm] = useState({ title: "", story: "" });
   const [eldTaskText, setEldTaskText] = useState("");
+  const [geofence, setGeofenceData] = useState(null);
+  const [alerts, setAlerts] = useState([]);
+  const [addressInput, setAddressInput] = useState("");
+  const [radiusInput, setRadiusInput] = useState("500");
+  const [geoLoading, setGeoLoading] = useState(false);
+  
+  // Free Manual Entry Fallback
+  const [useManualCoords, setUseManualCoords] = useState(false);
+  const [latInput, setLatInput] = useState("");
+  const [lngInput, setLngInput] = useState("");
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -101,6 +117,14 @@ export default function CaregiverPanel() {
         if (contactsRes.success) setContacts(contactsRes.contacts || []);
         if (gameRes.success) setQuestions(gameRes.questions || []);
         if (resultsRes.success) setResults(resultsRes.results || []);
+
+        // Fetch Geofence & Alerts
+        const [geoRes, alertsRes] = await Promise.all([
+          alzheimerAPI.geofence.get(),
+          alzheimerAPI.alerts.getAll()
+        ]);
+        if (geoRes.success) setGeofenceData(geoRes.geofence);
+        if (alertsRes.success) setAlerts(alertsRes.alerts || []);
       }
     } catch (error) {
       console.log("Error loading caregiver data", error);
@@ -112,6 +136,28 @@ export default function CaregiverPanel() {
   useEffect(() => {
     loadAll();
   }, [loadAll]);
+
+  // LIVE ALERT POLLING (5 Seconds)
+  // Only runs when the Alerts tab is active to save battery/data
+  useEffect(() => {
+    let interval;
+    if (activeTab === 'alerts' && !isElderly) {
+      console.log("⏱️ Starting 5s Alert Polling...");
+      interval = setInterval(async () => {
+        try {
+          const [geoRes, alertsRes] = await Promise.all([
+            alzheimerAPI.geofence.get(),
+            alzheimerAPI.alerts.getAll()
+          ]);
+          if (geoRes.success) setGeofenceData(geoRes.geofence);
+          if (alertsRes.success) setAlerts(alertsRes.alerts || []);
+        } catch (e) {
+          console.log("Auto-polling error", e);
+        }
+      }, 5000);
+    }
+    return () => clearInterval(interval);
+  }, [activeTab, isElderly, isGuardian]); // Added isGuardian to triggers
 
   // Handlers
   const addNote = async () => {
@@ -234,6 +280,66 @@ export default function CaregiverPanel() {
       loadAll();
     } catch (e) {
       console.log("Game add error", e);
+    }
+  };
+
+  const handleSetGeofence = async () => {
+    setGeoLoading(true);
+    try {
+      let latitude, longitude;
+
+      if (useManualCoords) {
+        latitude = parseFloat(latInput);
+        longitude = parseFloat(lngInput);
+        if (isNaN(latitude) || isNaN(longitude)) {
+          Alert.alert("Error", "Please enter valid numeric coordinates.");
+          setGeoLoading(false);
+          return;
+        }
+      } else {
+        if (!addressInput.trim()) {
+           setGeoLoading(false);
+           return;
+        }
+
+        // Using FREE Nominatim (OpenStreetMap) API to avoid Google Billing
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressInput)}`, {
+            headers: { 'User-Agent': 'HealthVerse-Caregiver-App' }
+        });
+        const data = await response.json();
+
+        if (data.length === 0) {
+          Alert.alert("Error", "Address not found. Please try a more specific address or use 'Manual Coordinates'.");
+          setGeoLoading(false);
+          return;
+        }
+        latitude = parseFloat(data[0].lat);
+        longitude = parseFloat(data[0].lon);
+      }
+
+      const res = await alzheimerAPI.geofence.set({
+        centerLat: latitude,
+        centerLng: longitude,
+        radius: parseInt(radiusInput)
+      });
+      if (res.success) {
+        Alert.alert("Success", "Geofence set!");
+        loadAll();
+      }
+    } catch (e) {
+      console.log("Geocoding Error:", e);
+      Alert.alert("Error", "Geocoding service unavailable. Please check your internet or use Manual Coordinates.");
+    } finally {
+      setGeoLoading(false);
+    }
+  };
+
+  const acknowledgeAlert = async (id) => {
+    try {
+      await alzheimerAPI.alerts.acknowledge(id);
+      loadAll();
+    } catch (e) {
+      Alert.alert("Error", "Failed to acknowledge alert");
     }
   };
 
@@ -416,6 +522,135 @@ export default function CaregiverPanel() {
     </View>
   );
 
+  const renderAlzGeofence = () => (
+    <View>
+      <Card style={styles.formCard}>
+        <Text style={styles.formTitle}>Set Safe Zone (Geofence)</Text>
+        <Text style={styles.subText}>Alerts trigger if the patient moves outside this radius.</Text>
+        
+        <TouchableOpacity 
+          style={styles.toggleRow} 
+          onPress={() => setUseManualCoords(!useManualCoords)}
+        >
+          <View style={[styles.miniCheck, useManualCoords && { backgroundColor: COLORS.primary }]}>
+             {useManualCoords && <Text style={{ color: '#fff', fontSize: 10 }}>✓</Text>}
+          </View>
+          <Text style={styles.toggleText}>Use Latitude/Longitude manually</Text>
+        </TouchableOpacity>
+
+        {useManualCoords ? (
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <Input 
+              placeholder="Latitude" 
+              style={{ flex: 1 }} 
+              value={latInput} 
+              onChangeText={setLatInput} 
+              keyboardType="numeric"
+            />
+            <Input 
+              placeholder="Longitude" 
+              style={{ flex: 1 }} 
+              value={lngInput} 
+              onChangeText={setLngInput} 
+              keyboardType="numeric"
+            />
+          </View>
+        ) : (
+          <Input 
+            placeholder="Safe Zone Address (Home address...)" 
+            value={addressInput} 
+            onChangeText={setAddressInput} 
+          />
+        )}
+
+        <View style={{ marginBottom: 15 }}>
+          <Text style={styles.label}>Safe Radius: {radiusInput} meters</Text>
+          <TextInput 
+            keyboardType="numeric" 
+            placeholder="Radius (e.g. 500)" 
+            value={radiusInput} 
+            onChangeText={setRadiusInput} 
+            style={[styles.input, { marginTop: 5 }]}
+          />
+        </View>
+        <TouchableOpacity 
+          style={[styles.btnPrimary, geoLoading && { opacity: 0.7 }]} 
+          onPress={handleSetGeofence} 
+          disabled={geoLoading}
+        >
+          {geoLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Configure Geofence</Text>}
+        </TouchableOpacity>
+      </Card>
+
+      {geofence && (
+        <View style={{ marginTop: 20 }}>
+          <Text style={styles.listSectionTitle}>Current Configuration</Text>
+          <Card style={{ height: 300, padding: 0, overflow: 'hidden' }}>
+            <MapView
+              style={{ flex: 1 }}
+              initialRegion={{
+                latitude: geofence.centerLat,
+                longitude: geofence.centerLng,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              }}
+            >
+              <Marker coordinate={{ latitude: geofence.centerLat, longitude: geofence.centerLng }} />
+              <Circle
+                center={{ latitude: geofence.centerLat, longitude: geofence.centerLng }}
+                radius={geofence.radius}
+                fillColor="rgba(14, 116, 144, 0.2)"
+                strokeColor={COLORS.primary}
+              />
+            </MapView>
+          </Card>
+          <Text style={styles.centerSub}>Center: {geofence.centerLat.toFixed(4)}, {geofence.centerLng.toFixed(4)}</Text>
+          <Text style={styles.centerSub}>Radius: {geofence.radius}m</Text>
+        </View>
+      )}
+    </View>
+  );
+
+  const renderAlzAlerts = () => (
+    <View>
+      <Text style={styles.listSectionTitle}>Security Alert Logs</Text>
+      {alerts.length === 0 ? (
+        <Text style={styles.emptyText}>No alerts recorded yet.</Text>
+      ) : (
+        alerts.map(a => (
+          <Card key={a._id} style={[styles.listItem, !a.acknowledged && { borderLeftWidth: 4, borderLeftColor: COLORS.danger }]}>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={[styles.itemDate, { color: a.acknowledged ? COLORS.muted : COLORS.danger }]}>
+                  {a.type.toUpperCase()} • {new Date(a.createdAt).toLocaleString()}
+                </Text>
+                {!a.acknowledged && <View style={styles.urgentBadge}><Text style={styles.urgentText}>NEW</Text></View>}
+              </View>
+              <Text style={styles.itemTitle}>{a.address || "Unknown Location"}</Text>
+              <TouchableOpacity onPress={() => {
+                // Live Mode URL: q=lat,lng places a pin exactly at coordinates
+                const url = `https://www.google.com/maps/search/?api=1&query=${a.lat},${a.lng}`;
+                router.push(url);
+              }}>
+                <Text style={{ color: COLORS.primary, fontSize: 13, marginTop: 4 }}>📍 View Live Location on Map</Text>
+              </TouchableOpacity>
+            </View>
+            {!a.acknowledged && !isGuardian && (
+              <TouchableOpacity style={styles.ackBtn} onPress={() => acknowledgeAlert(a._id)}>
+                <Text style={styles.ackBtnText}>Ack</Text>
+              </TouchableOpacity>
+            )}
+            {!a.acknowledged && isGuardian && (
+              <View style={[styles.ackBtn, { backgroundColor: COLORS.muted, opacity: 0.7 }]}>
+                <Text style={styles.ackBtnText}>Pending</Text>
+              </View>
+            )}
+          </Card>
+        ))
+      )}
+    </View>
+  );
+
   const renderContacts = () => (
     <View>
       <Card style={styles.formCard}>
@@ -478,6 +713,8 @@ export default function CaregiverPanel() {
         case "private": return renderAlzPrivate();
         case "game": return renderAlzGame();
         case "contacts": return renderContacts();
+        case "location": return renderAlzGeofence();
+        case "alerts": return renderAlzAlerts();
         default: return null;
       }
     }
@@ -499,21 +736,23 @@ export default function CaregiverPanel() {
         <View style={{ width: 60 }} />
       </View>
 
-      <View style={styles.tabsWrap}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabs}>
-          {tabs.map((tab) => (
-            <TouchableOpacity
-              key={tab.key}
-              onPress={() => setActiveTab(tab.key)}
-              style={[styles.tab, activeTab === tab.key && styles.tabActive]}
-            >
-              <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
+      {!isGuardian && (
+        <View style={styles.tabsWrap}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabs}>
+            {tabs.map((tab) => (
+              <TouchableOpacity
+                key={tab.key}
+                onPress={() => setActiveTab(tab.key)}
+                style={[styles.tab, activeTab === tab.key && styles.tabActive]}
+              >
+                <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
 
       <KeyboardAvoidingView 
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -583,5 +822,14 @@ const styles = StyleSheet.create({
   statusTagText: { fontSize: 9, fontWeight: "900", color: "#fff" },
   textStrike: { textDecorationLine: 'line-through', color: COLORS.muted },
   pickBtn: { backgroundColor: COLORS.accent, borderRadius: 12, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center' },
-  pickBtnText: { color: "#fff", fontWeight: "700", fontSize: 13 }
+  pickBtnText: { color: "#fff", fontWeight: "700", fontSize: 13 },
+  label: { fontSize: 13, fontWeight: "700", color: COLORS.muted, marginBottom: 4 },
+  centerSub: { fontSize: 12, color: COLORS.muted, textAlign: 'center', marginTop: 5 },
+  urgentBadge: { backgroundColor: COLORS.danger, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  urgentText: { color: "#fff", fontSize: 10, fontWeight: "900" },
+  ackBtn: { backgroundColor: COLORS.success, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10, marginLeft: 15 },
+  ackBtnText: { color: "#fff", fontWeight: "900", fontSize: 12 },
+  toggleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 15, marginTop: 5 },
+  miniCheck: { width: 18, height: 18, borderRadius: 4, borderWidth: 1, borderColor: COLORS.primary, marginRight: 8, justifyContent: 'center', alignItems: 'center' },
+  toggleText: { fontSize: 13, color: COLORS.primary, fontWeight: '700' }
 });

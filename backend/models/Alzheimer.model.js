@@ -180,6 +180,59 @@ const contactSchema = new mongoose.Schema({
   },
 });
 
+const geofenceSchema = new mongoose.Schema({
+  patientId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Alzheimer",
+    required: true,
+  },
+  centerLat: Number,
+  centerLng: Number,
+  radius: Number,
+});
+
+const alertSchema = new mongoose.Schema({
+  patientId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Alzheimer",
+    required: true,
+  },
+
+  type: {
+    type: String,
+    enum: ["geofence", "fall", "emergency"],
+    default: "geofence",
+  },
+
+  lat: {
+    type: Number,
+    required: true,
+  },
+
+  lng: {
+    type: Number,
+    required: true,
+  },
+
+  address: {
+    type: String,
+  },
+
+  acknowledged: {
+    type: Boolean,
+    default: false,
+  },
+
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  }
+});
+
+const Alert = mongoose.model("Alert", alertSchema);
+
+const Geofence = mongoose.model("Geofence", geofenceSchema);
+
 const AlzContact = mongoose.model("Contact", contactSchema);
 
 const GameResult = mongoose.model("GameResult", gameResultSchema);
@@ -188,4 +241,4 @@ const AlzTask= mongoose.model("Alztask", taskSchema);
 const AlzNote = mongoose.model("Alznote", noteSchema);
 const AlzMemoryGame = mongoose.model("AlzmemoryGame", memoryGameSchema);
 
-module.exports = { AlzTask, AlzNote, AlzMemoryGame, GameResult, AlzContact };
+module.exports = { AlzTask, AlzNote, AlzMemoryGame, GameResult, AlzContact, Geofence, Alert };

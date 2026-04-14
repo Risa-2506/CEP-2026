@@ -1,4 +1,4 @@
-const {AlzTask, AlzNote, AlzMemoryGame, GameResult, AlzContact} = require("../models/Alzheimer.model");
+const { AlzTask, AlzNote, AlzMemoryGame, GameResult, AlzContact, Geofence, Alert } = require("../models/Alzheimer.model");
 
 // CREATE NOTE
 exports.createNote = async (req, res) => {
@@ -532,5 +532,150 @@ exports.deleteContact = async (req, res) => {
 
   } catch (error) {
     res.status(500).json({ message: "Failed to delete contact" });
+  }
+};
+
+
+
+//GEOFENCE
+exports.setGeofence = async (req, res) => {
+  try {
+    const { centerLat, centerLng, radius } = req.body;
+
+    const patientId = req.user.linkedPatientId;
+
+    let geofence = await Geofence.findOne({ patientId });
+
+    if (geofence) {
+      // update existing
+      geofence.centerLat = centerLat;
+      geofence.centerLng = centerLng;
+      geofence.radius = radius;
+    } else {
+      // create new
+      geofence = new Geofence({
+        patientId,
+        centerLat,
+        centerLng,
+        radius,
+      });
+    }
+
+    await geofence.save();
+
+    res.json({
+      success: true,
+      geofence,
+    });
+
+  } catch (error) {
+    console.error("Geofence error:", error);
+    res.status(500).json({ message: "Failed to set geofence" });
+  }
+};
+
+exports.getGeofence = async (req, res) => {
+  try {
+    const patientId = req.user.linkedPatientId;
+
+    const geofence = await Geofence.findOne({ patientId });
+
+    res.json({
+      success: true,
+      geofence,
+    });
+
+  } catch (error) {
+    console.error("Get geofence error:", error);
+    res.status(500).json({ message: "Failed to fetch geofence" });
+  }
+};
+
+
+//Alerts
+exports.geofenceAlert = async (req, res) => {
+  try {
+    const { lat, lng, address } = req.body;
+
+    const patientId = req.user.linkedPatientId;
+
+    // basic validation
+    if (!lat || !lng) {
+      return res.status(400).json({ message: "Location required" });
+    }
+    const lastAlert = await Alert.findOne({ patientId })
+      .sort({ createdAt: -1 });
+
+    if (lastAlert && lastAlert.acknowledged === false) {
+      // Update existing alert with new coordinates (WITHOUT calling Nominatim again to save costs)
+      lastAlert.lat = lat;
+      lastAlert.lng = lng;
+      // We keep the first address for context, or just update the raw coords
+      await lastAlert.save();
+      
+      return res.json({
+        success: true,
+        message: "Existing alert updated with latest location",
+      });
+    }
+
+    const alert = new Alert({
+      patientId,
+      type: "geofence",
+      lat,
+      lng,
+      address,
+    });
+
+    await alert.save();
+
+    console.log("🚨 GEOFENCE ALERT:", address);
+
+    res.json({
+      success: true,
+      message: "Alert recorded",
+    });
+
+  } catch (error) {
+    console.error("Alert error:", error);
+    res.status(500).json({ message: "Failed to record alert" });
+  }
+};
+
+exports.getAlerts = async (req, res) => {
+  try {
+    const patientId = req.user.linkedPatientId;
+
+    const alerts = await Alert.find({ patientId })
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      alerts,
+    });
+
+  } catch (error) {
+    console.error("Fetch alerts error:", error);
+    res.status(500).json({ message: "Failed to fetch alerts" });
+  }
+};
+
+exports.acknowledgeAlert = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const alert = await Alert.findById(id);
+
+    if (!alert) {
+      return res.status(404).json({ message: "Alert not found" });
+    }
+
+    alert.acknowledged = true;
+    await alert.save();
+
+    res.json({ success: true });
+
+  } catch (error) {
+    res.status(500).json({ message: "Failed to acknowledge alert" });
   }
 };

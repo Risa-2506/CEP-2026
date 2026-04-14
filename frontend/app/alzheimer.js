@@ -1,7 +1,8 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View, SafeAreaView, Platform, StatusBar, TouchableOpacity, Image, TextInput, Alert, KeyboardAvoidingView } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { alzheimerAPI } from "../services/api";
+import * as Location from 'expo-location';
 
 const TABS = [
   { key: "notes", label: "Care Notes" },
@@ -46,6 +47,8 @@ export default function AlzheimerPatient() {
   // New states for task management
   const [newTaskText, setNewTaskText] = useState("");
   const [taskLoading, setTaskLoading] = useState(false);
+  const [geofence, setGeofence] = useState(null);
+  const [wasOutside, setWasOutside] = useState(false);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -59,6 +62,9 @@ export default function AlzheimerPatient() {
       if (tasksRes.success) setTasks(tasksRes.tasks || []);
       if (contactsRes.success) setContacts(contactsRes.contacts || []);
       if (gameRes.success) setQuestions(gameRes.questions || []);
+
+      const geoRes = await alzheimerAPI.geofence.get();
+      if (geoRes.success) setGeofence(geoRes.geofence);
     } catch (error) {
       console.log("Error loading patient data", error);
     } finally {
@@ -69,6 +75,136 @@ export default function AlzheimerPatient() {
   useEffect(() => {
     loadAll();
   }, [loadAll]);
+
+  // Ref tracking for Smart Address throttling (prevents hitting API limits)
+  const lastLookupTime = useRef(0);
+  const lastLookupCoords = useRef(null);
+  const currentAddress = useRef("Locating...");
+  // Reliability refs: prevent duplicate alerts & simultaneous API requests
+  const isSendingAlert = useRef(false);
+  const lastAlertPopupTime = useRef(0);
+
+  // GEOFENCING LOGIC
+  const getDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371e3; // meters
+    const phi1 = (lat1 * Math.PI) / 180;
+    const phi2 = (lat2 * Math.PI) / 180;
+    const deltaPhi = ((lat2 - lat1) * Math.PI) / 180;
+    const deltaLambda = ((lon2 - lon1) * Math.PI) / 180;
+
+    const a =
+      Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+      Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
+  };
+
+  useEffect(() => {
+    let subscription;
+
+    const startTracking = async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.log("Permission to access location was denied");
+        return;
+      }
+
+      subscription = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.BestForNavigation, // High performance tracking
+          timeInterval: 5000,                            // Increased frequency (5s) for responsive geofencing
+          distanceInterval: 5,                           // Trigger every 5 meters
+        },
+        async (location) => {
+          if (!geofence) return;
+
+          const dist = getDistance(
+            location.coords.latitude,
+            location.coords.longitude,
+            geofence.centerLat,
+            geofence.centerLng
+          );
+
+          console.log(`📍 Current distance: ${dist.toFixed(0)}m (Radius: ${geofence.radius}m)`);
+
+          if (dist > geofence.radius) {
+            if (!wasOutside) {
+              setWasOutside(true);
+              console.log("🚨 OUT OF BOUNDS!");
+            }
+
+            // DUPLICATE POPUP PROTECTION: show at most once every 15 seconds
+            const nowPopup = Date.now();
+            if (nowPopup - lastAlertPopupTime.current > 15000) {
+              lastAlertPopupTime.current = nowPopup;
+              Alert.alert(
+                "🚨 Boundary Breach",
+                "You have moved outside the safe zone. Your caregiver has been notified.",
+                [{ text: "OK" }]
+              );
+            }
+
+            // SMART ADDRESS LOGIC: 
+            // Only fetch address if:
+            // 1. It's the first time we are outside
+            // 2. OR 5 minutes have passed since last lookup
+            // 3. OR the patient moved more than 100 meters from last lookup
+            
+            const now = Date.now();
+            const timeSinceLast = now - lastLookupTime.current;
+            const distSinceLast = lastLookupCoords.current 
+              ? getDistance(location.coords.latitude, location.coords.longitude, lastLookupCoords.current.lat, lastLookupCoords.current.lng)
+              : Infinity;
+
+            if (timeSinceLast > 20 * 60 * 1000 || distSinceLast > 400 || !lastLookupCoords.current) {
+               console.log("🔄 Fetching fresh address from Nominatim (Throttled)...");
+               try {
+                 const response = await fetch(
+                   `https://nominatim.openstreetmap.org/reverse?format=json&lat=${location.coords.latitude}&lon=${location.coords.longitude}`,
+                   { headers: { 'User-Agent': 'HealthVerse-Patient-App' } }
+                 );
+                 const data = await response.json();
+                 currentAddress.current = data.display_name || "Unknown Location";
+                 lastLookupTime.current = now;
+                 lastLookupCoords.current = { lat: location.coords.latitude, lng: location.coords.longitude };
+               } catch (e) {
+                 console.log("Address lookup failed, using last known", e);
+               }
+            }
+
+            // REQUEST LOCK: prevent overlapping API calls
+            if (isSendingAlert.current) return;
+            isSendingAlert.current = true;
+            try {
+              await alzheimerAPI.geofence.triggerAlert({
+                lat: location.coords.latitude,
+                lng: location.coords.longitude,
+                address: currentAddress.current
+              });
+            } catch (e) {
+              console.log("Alert Trigger Failed", e);
+            } finally {
+              isSendingAlert.current = false;
+            }
+          } else {
+            if (wasOutside) {
+              setWasOutside(false);
+              console.log("✅ Back inside safe zone");
+            }
+          }
+        }
+      );
+    };
+
+    if (geofence) {
+      startTracking();
+    }
+
+    return () => {
+      if (subscription) subscription.remove();
+    };
+  }, [geofence, wasOutside]);
 
   const handleNoteStatus = async (noteId, currentStatus) => {
     let newStatus = "pending";

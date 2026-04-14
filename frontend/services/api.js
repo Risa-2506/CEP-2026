@@ -83,7 +83,7 @@ const request = async (method, path, body = null) => {
         }
     }
 
-    throw new Error(lastError?.message || "Unable to connect to backend API.");
+    throw new Error(lastError?.message || "Unable to connect to any backend API. Check your internet connection or server status.");
 };
 
 
@@ -184,6 +184,15 @@ export const alzheimerAPI = {
         create: (body) => request("POST", "/alzheimer/contacts", body),
         update: (id, body) => request("PUT", `/alzheimer/contacts/${id}`, body),
         delete: (id) => request("DELETE", `/alzheimer/contacts/${id}`)
+    },
+    geofence: {
+        get: () => request("GET", "/alzheimer/geofence"),
+        set: (body) => request("POST", "/alzheimer/geofence", body),
+        triggerAlert: (body) => request("POST", "/alzheimer/geofence/alert", body)
+    },
+    alerts: {
+        getAll: () => request("GET", "/alzheimer/alerts"),
+        acknowledge: (id) => request("PUT", `/alzheimer/alerts/${id}/acknowledge`)
     }
 };
 

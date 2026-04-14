@@ -23,6 +23,11 @@ const {
   deleteContact,
   submitGame,
   getGameResults,
+  setGeofence,
+  getGeofence,
+  geofenceAlert,
+  getAlerts,
+  acknowledgeAlert
 } = require("../controllers/alzheimerController");
 
 // NOTES ROUTES
@@ -63,5 +68,12 @@ router.get("/contacts", authMiddleware, getContacts);
 router.put("/contacts/:id", authMiddleware, updateContact);
 router.delete("/contacts/:id", authMiddleware, deleteContact);
 
+// Geofence
+router.post("/geofence", authMiddleware, setGeofence);
+router.get("/geofence", authMiddleware, getGeofence);
+
+router.post("/geofence/alert", authMiddleware, geofenceAlert);
+router.get("/alerts", authMiddleware, getAlerts);
+router.put("/alerts/:id/acknowledge", authMiddleware, acknowledgeAlert);
 
 module.exports = router;

@@ -53,7 +53,7 @@ export default function CaregiverDashboard() {
       title: "Patient Location", 
       sub: "Live tracking", 
       color: "#3B82F6", 
-      locked: true 
+      locked: isElderly 
     },
     { 
       id: "alerts", 
@@ -61,7 +61,7 @@ export default function CaregiverDashboard() {
       title: "Alerts", 
       sub: "Fall & Safety logs", 
       color: "#DC2626", 
-      locked: true 
+      locked: isElderly 
     },
   ];
 

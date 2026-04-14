@@ -69,8 +69,26 @@ export default function GuardianDashboard() {
   ];
 
   const monitoringItems = [
-    { icon: "📍", title: "Patient Location", sub: "View live location", color: "#2563EB", action: () => {} },
-    { icon: "🚨", title: "Alerts", sub: "Notifications & warnings", color: "#DC2626", action: () => {} },
+    { 
+      icon: "📍", 
+      title: "Patient Location", 
+      sub: "View live location", 
+      color: "#2563EB", 
+      action: () => {
+        if (!isElderly) router.push("/caregiver?tab=location");
+        else Alert.alert("Coming Soon", "Real-time location for elderly care is currently focused on Alzheimer patients.");
+      } 
+    },
+    { 
+      icon: "🚨", 
+      title: "Alerts", 
+      sub: "Notifications & warnings", 
+      color: "#DC2626", 
+      action: () => {
+        if (!isElderly) router.push("/caregiver?tab=alerts");
+        else Alert.alert("Coming Soon", "Safety alerts for elderly care are currently focused on Alzheimer patients.");
+      } 
+    },
     { icon: "❤️", title: "Health Info", sub: "Read-only summary", color: "#7C3AED", action: openHealthInfo },
   ];
 
@@ -138,14 +156,16 @@ export default function GuardianDashboard() {
     <View style={s.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={s.header}>
-          <TouchableOpacity onPress={() => router.replace("/")} style={s.back}>
+          <TouchableOpacity onPress={() => router.replace("/home")} style={s.back}>
             <Text style={s.backT}>← Home</Text>
           </TouchableOpacity>
-          <Text style={s.hIcon}>👨‍👩‍👧</Text>
-          <Text style={s.hTitle}>Guardian Dashboard</Text>
-          <Text style={s.hSub}>
-            {user?.linkedPatientName ? `Monitoring: ${user.linkedPatientName}` : `Welcome, ${user?.name || "Guardian"}`}
-          </Text>
+          <TouchableOpacity onPress={() => fetchHealthData()} style={{ alignItems: 'center' }}>
+            <Text style={s.hIcon}>👨‍👩‍👧</Text>
+            <Text style={s.hTitle}>Guardian Dashboard</Text>
+            <Text style={s.hSub}>
+              {user?.linkedPatientName ? `Monitoring: ${user.linkedPatientName}` : `Welcome, ${user?.name || "Guardian"}`}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         <View style={s.notice}>
@@ -154,17 +174,27 @@ export default function GuardianDashboard() {
         </View>
 
         <View style={s.section}>
-          <Text style={s.sectionTitle}>Patient Status Summary</Text>
-          <View style={s.grid}>
-            {monitoringItems.map((it, i) => (
-              <TouchableOpacity key={i} style={s.card} activeOpacity={0.8} onPress={it.action}>
-                <View style={[s.cIcon, { backgroundColor: it.color }]}>
-                  <Text style={{ fontSize: 24 }}>{it.icon}</Text>
-                </View>
-                <Text style={s.cTitle}>{it.title}</Text>
-                <Text style={s.cSub}>{it.sub}</Text>
-              </TouchableOpacity>
-            ))}
+          <Text style={s.sectionTitle}>Safety & Health Monitoring</Text>
+          <View style={s.mainActions}>
+            <TouchableOpacity 
+              style={[s.mainCard, { backgroundColor: "#DC2626" }]} 
+              activeOpacity={0.8} 
+              onPress={() => !isElderly ? router.push("/caregiver?tab=alerts") : Alert.alert("Coming Soon", "Safety alerts for elderly care are currently focused on Alzheimer patients.")}
+            >
+              <Text style={s.mainIcon}>🚨</Text>
+              <Text style={s.mainTitle}>SAFETY ALERTS</Text>
+              <Text style={s.mainSub}>View real-time movement logs</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[s.mainCard, { backgroundColor: "#7C3AED" }]} 
+              activeOpacity={0.8} 
+              onPress={openHealthInfo}
+            >
+              <Text style={s.mainIcon}>❤️</Text>
+              <Text style={s.mainTitle}>HEALTH INFO</Text>
+              <Text style={s.mainSub}>Read-only patient summary</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -225,6 +255,11 @@ const s = StyleSheet.create({
   notice: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(245,158,11,0.12)", marginHorizontal: 16, marginTop: 16, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: "rgba(245,158,11,0.25)", gap: 10 },
   noticeIcon: { fontSize: 20 },
   noticeText: { color: "#FCD34D", fontSize: 13, flex: 1 },
+  mainActions: { flexDirection: 'row', gap: 12, marginTop: 5 },
+  mainCard: { flex: 1, borderRadius: 20, padding: 20, alignItems: 'center', justifyContent: 'center', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 4 },
+  mainIcon: { fontSize: 32, marginBottom: 8 },
+  mainTitle: { color: '#fff', fontSize: 14, fontWeight: '900', letterSpacing: 0.5 },
+  mainSub: { color: 'rgba(255,255,255,0.8)', fontSize: 10, marginTop: 4, textAlign: 'center' },
   section: { paddingHorizontal: 16, marginTop: 20 },
   sectionTitle: { fontSize: 18, fontWeight: "800", color: COLORS.text, marginBottom: 14 },
   grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
