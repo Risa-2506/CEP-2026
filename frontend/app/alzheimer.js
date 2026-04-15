@@ -157,7 +157,7 @@ export default function AlzheimerPatient() {
               ? getDistance(location.coords.latitude, location.coords.longitude, lastLookupCoords.current.lat, lastLookupCoords.current.lng)
               : Infinity;
 
-            if (timeSinceLast > 20 * 60 * 1000 || distSinceLast > 400 || !lastLookupCoords.current) {
+            if (timeSinceLast > 6 * 60 * 1000 || distSinceLast > 300 || !lastLookupCoords.current) {
                console.log("🔄 Fetching fresh address from Nominatim (Throttled)...");
                try {
                  const response = await fetch(

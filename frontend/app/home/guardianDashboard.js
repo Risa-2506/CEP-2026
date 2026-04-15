@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, ActivityIndicator, SafeAreaView, Platform, StatusBar } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, ActivityIndicator, SafeAreaView, Platform, StatusBar, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { alzheimerAPI, elderlyAPI } from "../../services/api";
@@ -156,7 +156,7 @@ export default function GuardianDashboard() {
     <View style={s.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={s.header}>
-          <TouchableOpacity onPress={() => router.replace("/home")} style={s.back}>
+          <TouchableOpacity onPress={() => router.replace("/")} style={s.back}>
             <Text style={s.backT}>← Home</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => fetchHealthData()} style={{ alignItems: 'center' }}>
@@ -177,13 +177,23 @@ export default function GuardianDashboard() {
           <Text style={s.sectionTitle}>Safety & Health Monitoring</Text>
           <View style={s.mainActions}>
             <TouchableOpacity 
-              style={[s.mainCard, { backgroundColor: "#DC2626" }]} 
+              style={[s.mainCard, { backgroundColor: isElderly ? "#EA580C" : "#DC2626" }]} 
               activeOpacity={0.8} 
-              onPress={() => !isElderly ? router.push("/caregiver?tab=alerts") : Alert.alert("Coming Soon", "Safety alerts for elderly care are currently focused on Alzheimer patients.")}
+              onPress={() => {
+                if (isElderly) {
+                  Alert.alert(
+                    "🚧 Coming Soon",
+                    "Safety alerts for fall detection and abnormal movements in Elderly Care are currently being built. Check back soon!",
+                    [{ text: "OK" }]
+                  );
+                } else {
+                  router.push("/caregiver?tab=alerts");
+                }
+              }}
             >
-              <Text style={s.mainIcon}>🚨</Text>
-              <Text style={s.mainTitle}>SAFETY ALERTS</Text>
-              <Text style={s.mainSub}>View real-time movement logs</Text>
+              <Text style={s.mainIcon}>{isElderly ? "🚼" : "🚨"}</Text>
+              <Text style={s.mainTitle}>{isElderly ? "FALL & MOVEMENT ALERTS" : "SAFETY ALERTS"}</Text>
+              <Text style={s.mainSub}>{isElderly ? "Fall detection & abnormal movements" : "View real-time movement logs"}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 

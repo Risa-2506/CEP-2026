@@ -130,7 +130,7 @@ export default function Home() {
     if (user?.role === "caregiver") {
       router.push("/caregiver");
     } else if (user?.role === "guardian") {
-      router.push("/guardian");
+      router.push("/home/guardianDashboard");
     } else if (user?.role === "patient") {
       if (user?.linkedPatientType === "elderly") {
         router.push("/elderly");

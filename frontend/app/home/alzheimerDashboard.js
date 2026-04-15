@@ -27,14 +27,7 @@ export default function AlzheimerDashboard() {
           <Text style={styles.headerSub}>Welcome, {user?.name || "Patient"}</Text>
         </View>
 
-        {/* Emergency Button */}
-        <TouchableOpacity style={styles.emergencyBtn} activeOpacity={0.7}>
-          <Text style={styles.emergencyIcon}>🚨</Text>
-          <View>
-            <Text style={styles.emergencyTitle}>Emergency</Text>
-            <Text style={styles.emergencySub}>Tap to alert caregiver & guardians</Text>
-          </View>
-        </TouchableOpacity>
+
 
         {/* Dashboard Cards */}
         <View style={styles.grid}>

@@ -79,14 +79,7 @@ export default function CaregiverDashboard() {
           </Text>
         </View>
 
-        {/* Coming Soon Section */}
-        <View style={s.soonCard}>
-          <Text style={s.soonIcon}>🚧</Text>
-          <Text style={s.soonTitle}>Caregiver Features Coming Soon</Text>
-          <Text style={s.soonText}>
-            We are building tools for you to track {user?.linkedPatientName || "your patient"}s health, location, and daily activities in real-time.
-          </Text>
-        </View>
+
 
         <View style={s.grid}>
           {items.map((it, i) => (

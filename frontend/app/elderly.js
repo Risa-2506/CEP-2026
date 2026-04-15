@@ -328,7 +328,12 @@ export default function Elderly() {
                 <Text style={styles.inspirationCardLabel}>Story</Text>
                 <Text style={styles.inspirationTitle}>{card.title}</Text>
                 <Text style={styles.inspirationTeaser}>{card.teaser}</Text>
-                <Text style={styles.inspirationHint}>Tap to read more</Text>
+                <Pressable
+                  onPress={() => setSelectedStory(card)}
+                  style={{ marginTop: 14, backgroundColor: COLORS.primary, paddingVertical: 10, paddingHorizontal: 24, borderRadius: 22, alignSelf: 'center' }}
+                >
+                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>📖 View Full Story</Text>
+                </Pressable>
               </View>
             ) : null}
             onTapCard={(idx) => setSelectedStory(storyCards[idx])}
@@ -811,5 +816,82 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#94A3B8",
     marginTop: 2
-  }
+  },
+  storyModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  storyBox: {
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    width: '100%',
+    maxHeight: '80%',
+    paddingBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 12,
+  },
+  storyHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  storyTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#0F172A',
+    flex: 1,
+    marginRight: 10,
+  },
+  closeBtn: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 14,
+  },
+  closeBtnText: {
+    color: '#475569',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  storyScrollArea: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
+  storyContent: {
+    fontSize: 16,
+    color: '#334155',
+    lineHeight: 26,
+    marginBottom: 20,
+  },
+  moralPill: {
+    backgroundColor: '#EFF6FF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 10,
+    borderLeftWidth: 4,
+    borderLeftColor: '#2563EB',
+  },
+  moralLabel: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#2563EB',
+    letterSpacing: 1,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+  },
+  moralText: {
+    fontSize: 15,
+    color: '#1E40AF',
+    fontWeight: '600',
+    fontStyle: 'italic',
+  },
 });

@@ -129,10 +129,7 @@ export default function Remedies() {
           <Text style={styles.errorText}>{error}</Text>
         </View>
       ) : null}
-      <View style={styles.urlBox}>
-        <Text style={styles.urlLabel}>Connected API URL</Text>
-        <Text style={styles.urlValue}>{BASE_URL || "Not set"}</Text>
-      </View>
+
 
       {/* List */}
       <FlatList
