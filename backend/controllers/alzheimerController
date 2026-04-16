@@ -611,8 +611,11 @@ exports.geofenceAlert = async (req, res) => {
       lastAlert.lat = lat;
       lastAlert.lng = lng;
       // We keep the first address for context, or just update the raw coords
+      if (address) {
+        lastAlert.address = address;
+      }
       await lastAlert.save();
-      
+
       return res.json({
         success: true,
         message: "Existing alert updated with latest location",

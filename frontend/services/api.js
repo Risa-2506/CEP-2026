@@ -2,7 +2,7 @@ const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://10.227.184.79:5000/r
 // ================= CONFIG =================
 
 // 🔥 PUT YOUR LOCAL IP HERE (IMPORTANT)
-const LOCAL_IP = "192.168.1.37"; // Updated to match Expo IP
+const LOCAL_IP = "192.168.39.132"; // Updated to match Expo IP
 
 const configuredBase = (process.env.EXPO_PUBLIC_API_URL || "").replace(/\/$/, "");
 
