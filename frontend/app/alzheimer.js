@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View, SafeAreaView, Platform, StatusBar, TouchableOpacity, Image, TextInput, Alert, KeyboardAvoidingView } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View, SafeAreaView, Platform, StatusBar, TouchableOpacity, Image, TextInput, Alert, KeyboardAvoidingView, Linking } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { alzheimerAPI } from "../services/api";
 import * as Location from 'expo-location';
+import { useTTS } from "../hooks/useTTS";
 
 const TABS = [
   { key: "notes", label: "Care Notes" },
@@ -30,6 +31,7 @@ const Card = ({ children, style }) => (
 export default function AlzheimerPatient() {
   const params = useLocalSearchParams();
   const router = useRouter();
+  const { speak, stop, isSpeaking } = useTTS();
   const [activeTab, setActiveTab] = useState(params.tab || "notes");
   const [loading, setLoading] = useState(false);
 
@@ -132,6 +134,7 @@ export default function AlzheimerPatient() {
             if (!wasOutside) {
               setWasOutside(true);
               console.log("🚨 OUT OF BOUNDS!");
+              speak("You have moved outside the safe zone. Please return immediately.");
             }
 
             // DUPLICATE POPUP PROTECTION: show at most once every 15 seconds
@@ -297,18 +300,23 @@ export default function AlzheimerPatient() {
           <Text style={[styles.noteText, n.status === "completed" && styles.textStrike]}>{n.text}</Text>
           <View style={styles.noteFooter}>
             <Text style={styles.noteDate}>{new Date(n.createdAt).toLocaleDateString()}</Text>
-            <TouchableOpacity 
-              onPress={() => handleNoteStatus(n._id, n.status)}
-              style={[
-                styles.statusBadge, 
-                n.status === "acknowledged" && { backgroundColor: COLORS.warning },
-                n.status === "completed" && { backgroundColor: COLORS.success }
-              ]}
-            >
-              <Text style={styles.statusBadgeText}>
-                {n.status === "pending" ? "Click to Acknowledge" : n.status.toUpperCase()}
-              </Text>
-            </TouchableOpacity>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <TouchableOpacity onPress={() => speak(n.text)} style={styles.ttsButton}>
+                <Text style={{ fontSize: 16 }}>🔊</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                onPress={() => handleNoteStatus(n._id, n.status)}
+                style={[
+                  styles.statusBadge, 
+                  n.status === "acknowledged" && { backgroundColor: COLORS.warning },
+                  n.status === "completed" && { backgroundColor: COLORS.success }
+                ]}
+              >
+                <Text style={styles.statusBadgeText}>
+                  {n.status === "pending" ? "Click to Acknowledge" : n.status.toUpperCase()}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </Card>
       ))}
@@ -317,7 +325,19 @@ export default function AlzheimerPatient() {
 
   const renderTasks = () => (
     <View>
-      <Text style={styles.sectionTitle}>My Daily Routine</Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>My Daily Routine</Text>
+        <TouchableOpacity style={styles.readAllBtn} onPress={() => {
+          if (tasks.length === 0) { speak('No routine tasks today!'); return; }
+          let fullText = "Your daily tasks are: ";
+          tasks.forEach((t, i) => {
+            fullText += `${i+1}: ${t.text}. `;
+          });
+          speak(fullText);
+        }}>
+          <Text style={styles.readAllText}>🔊 Read All</Text>
+        </TouchableOpacity>
+      </View>
       
       <Card style={styles.addCard}>
         <TextInput
@@ -348,7 +368,12 @@ export default function AlzheimerPatient() {
                 <View style={[styles.checkbox, t.status === "done" && styles.checkboxDone]}>
                   {t.status === "done" && <Text style={styles.checkMark}>✓</Text>}
                 </View>
-                <Text style={[styles.taskText, t.status === "done" && styles.taskTextDone]}>{t.text}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.taskText, t.status === "done" && styles.taskTextDone]}>{t.text}</Text>
+                </View>
+                <TouchableOpacity onPress={() => speak(t.text)} style={styles.ttsButtonTask}>
+                  <Text style={{ fontSize: 18 }}>🔊</Text>
+                </TouchableOpacity>
               </View>
             </Card>
           </TouchableOpacity>
@@ -381,7 +406,12 @@ export default function AlzheimerPatient() {
       <View>
         <Text style={styles.sectionTitle}>Memory Challenge</Text>
         <Card style={styles.gameCard}>
-          <Text style={styles.gameQuestion}>{currentQuestion.question}</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 20 }}>
+            <Text style={[styles.gameQuestion, { marginBottom: 0, flex: 1 }]}>{currentQuestion.question}</Text>
+            <TouchableOpacity onPress={() => speak(currentQuestion.question)}>
+              <Text style={{ fontSize: 24 }}>🔊</Text>
+            </TouchableOpacity>
+          </View>
           
           {currentQuestion.image ? (
             <View style={styles.imageContainer}>
@@ -496,6 +526,9 @@ export default function AlzheimerPatient() {
               <Text style={styles.contactRelation}>{c.relation}</Text>
               <Text style={styles.contactPhone}>{c.phone}</Text>
             </View>
+            <TouchableOpacity onPress={() => Linking.openURL(`tel:${c.phone}`)} style={{ padding: 10 }}>
+              <Text style={{ fontSize: 18 }}>📞</Text>
+            </TouchableOpacity>
             <TouchableOpacity onPress={() => deleteContact(c._id)} style={{ padding: 10 }}>
               <Text style={{ fontSize: 18 }}>🗑️</Text>
             </TouchableOpacity>
@@ -518,12 +551,20 @@ export default function AlzheimerPatient() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" />
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.replace("/")} style={styles.backButton}>
-          <Text style={styles.backButtonIcon}>← Home</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Alzheimer Care</Text>
-        <View style={{ width: 60 }} />
+      <View style={[styles.header, { flexDirection: 'column', alignItems: 'stretch' }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}>
+          <TouchableOpacity onPress={() => router.replace("/")} style={styles.backButton}>
+            <Text style={styles.backButtonIcon}>← Home</Text>
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { flex: 1, marginLeft: 10 }]}>Alzheimer Care</Text>
+        </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 16, gap: 10 }}>
+          {isSpeaking && (
+            <TouchableOpacity onPress={stop} style={styles.stopButton}>
+              <Text style={{ fontSize: 13 }}>⏹️ Stop</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       <View style={styles.tabsWrap}>
@@ -630,5 +671,14 @@ const styles = StyleSheet.create({
   addButtonText: { color: '#fff', fontSize: 28, fontWeight: 'bold' },
   taskContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   taskDeleteBtn: { padding: 15, justifyContent: 'center' },
-  deleteIcon: { fontSize: 20 }
+  deleteIcon: { fontSize: 20 },
+  
+  // TTS specific styles
+  stopButton: { paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#FEF2F2', borderRadius: 8, borderWidth: 1, borderColor: '#FCA5A5' },
+  langButton: { paddingHorizontal: 12, paddingVertical: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 8 },
+  langButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
+  ttsButton: { paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#F1F5F9', borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0', flexDirection: 'row', alignItems: 'center' },
+  ttsButtonTask: { paddingHorizontal: 10, paddingVertical: 8, marginLeft: 10, backgroundColor: '#F1F5F9', borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  readAllBtn: { flexDirection: 'row', backgroundColor: '#EEF2FF', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, borderColor: '#C7D2FE' },
+  readAllText: { color: COLORS.primary, fontWeight: 'bold', fontSize: 14 },
 });

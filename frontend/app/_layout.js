@@ -1,9 +1,11 @@
 import { Stack } from "expo-router";
 import { AuthProvider } from "../context/AuthContext";
+import { TTSProvider } from "../context/TTSContext";
 
 export default function Layout() {
   return (
     <AuthProvider>
+      <TTSProvider>
       <Stack
         screenOptions={{
           headerShown: false,
@@ -22,6 +24,7 @@ export default function Layout() {
         <Stack.Screen name="home/caregiverDashboard" />
         <Stack.Screen name="home/guardianDashboard" />
       </Stack>
+      </TTSProvider>
     </AuthProvider>
   );
 }

@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, SafeAreaView, Platform, StatusBar, KeyboardAvoidingView } from "react-native";
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, SafeAreaView, Platform, StatusBar, KeyboardAvoidingView, Linking } from "react-native";
 import Swiper from "react-native-deck-swiper";
 import { elderlyAPI } from "../services/api";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useTTS } from "../hooks/useTTS";
 
 // Demo stories used when database is empty
 const DEMO_STORIES = [
@@ -76,6 +77,7 @@ const Input = (props) => (
 export default function Elderly() {
   const params = useLocalSearchParams();
   const router = useRouter();
+  const { speak, stop, isSpeaking } = useTTS();
   const [activeTab, setActiveTab] = useState(params.tab || "notepad");
   const [loading, setLoading] = useState(true);
   const [selectedStory, setSelectedStory] = useState(null);
@@ -149,7 +151,12 @@ export default function Elderly() {
               </View>
             </View>
             <Text style={styles.listText}>{n.content}</Text>
-            <Text style={styles.itemDate}>{new Date(n.createdAt).toLocaleDateString()}</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+              <Text style={styles.itemDate}>{new Date(n.createdAt).toLocaleDateString()}</Text>
+              <Pressable onPress={() => speak(`${n.title}. ${n.content}`)} style={styles.ttsButtonSmall}>
+                <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#334155' }}>🔊 Read Note</Text>
+              </Pressable>
+            </View>
           </Card>
         ))
       )}
@@ -186,9 +193,21 @@ export default function Elderly() {
 
   const renderTasks = () => (
     <View style={styles.recordSection}>
-      <View style={styles.sectionIntro}>
-        <Text style={styles.sectionTitle}>Daily Routine</Text>
-        <Text style={styles.sectionSubtext}>Add and manage your daily tasks. Shared with caregiver.</Text>
+      <View style={[styles.sectionIntro, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.sectionTitle}>Daily Routine</Text>
+          <Text style={styles.sectionSubtext}>Add and manage your daily tasks. Shared with caregiver.</Text>
+        </View>
+        <Pressable style={styles.readAllBtn} onPress={() => {
+          if (tasks.length === 0) { speak('No routine tasks today!'); return; }
+          let fullText = "Your daily tasks are: ";
+          tasks.forEach((t, i) => {
+            fullText += `${i+1}: ${t.text}. `;
+          });
+          speak(fullText);
+        }}>
+          <Text style={styles.readAllText}>🔊 Read All</Text>
+        </Pressable>
       </View>
 
       <Card style={styles.formCard}>
@@ -218,14 +237,17 @@ export default function Elderly() {
         tasks.map((t) => (
           <Card key={t._id} style={[styles.listCard, t.status === "done" && { backgroundColor: "#F0FDFA", borderColor: "#5EEAD4" }]}>
             <View style={styles.listHeaderRow}>
-              <Pressable onPress={() => toggleTask(t)} style={{ flex: 1 }}>
+              <Pressable onPress={() => toggleTask(t)} style={{ flex: 1, paddingRight: 10 }}>
                 <Text style={[styles.listTitle, t.status === "done" && styles.textStrike]}>{t.text}</Text>
               </Pressable>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <Pressable onPress={() => speak(t.text)} style={[styles.ttsButtonSmall, { padding: 8 }]}>
+                  <Text style={{ fontSize: 16 }}>🔊</Text>
+                </Pressable>
                 <View style={[styles.statusPill, { backgroundColor: t.status === "done" ? "#10B981" : "#F59E0B" }]}>
                     <Text style={styles.statusPillText}>{t.status === "done" ? "DONE" : "PENDING"}</Text>
                 </View>
-                <Pressable onPress={() => deleteTask(t._id)}>
+                <Pressable onPress={() => deleteTask(t._id)} style={{ padding: 4 }}>
                   <Text style={{ fontSize: 18 }}>🗑️</Text>
                 </Pressable>
               </View>
@@ -265,12 +287,19 @@ export default function Elderly() {
       {contacts.map((c) => (
         <Card key={c._id} style={styles.listCard}>
           <View style={styles.listHeaderRow}>
-            <Text style={styles.listTitle}>{c.name}</Text>
-            <Pressable style={styles.deletePill} onPress={async () => { await elderlyAPI.contacts.delete(c._id); loadAll(); }}>
-              <Text style={styles.deletePillText}>Delete</Text>
-            </Pressable>
+            <View>
+              <Text style={styles.listTitle}>{c.name}</Text>
+              <Text style={styles.listText}>{c.phone}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Pressable style={[styles.deletePill, { backgroundColor: '#10B981' }]} onPress={() => Linking.openURL(`tel:${c.phone}`)}>
+                <Text style={styles.deletePillText}>Call</Text>
+              </Pressable>
+              <Pressable style={styles.deletePill} onPress={async () => { await elderlyAPI.contacts.delete(c._id); loadAll(); }}>
+                <Text style={styles.deletePillText}>Delete</Text>
+              </Pressable>
+            </View>
           </View>
-          <Text style={styles.listText}>{c.phone}</Text>
         </Card>
       ))}
     </View>
@@ -303,6 +332,11 @@ export default function Elderly() {
             </Pressable>
           </View>
           <Text style={styles.listText}>{m.story}</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 12 }}>
+              <Pressable onPress={() => speak(`${m.title}. ${m.story}`)} style={styles.ttsButtonSmall}>
+                <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#334155' }}>🔊 Read Memory</Text>
+              </Pressable>
+          </View>
         </Card>
       ))}
     </View>
@@ -382,13 +416,22 @@ export default function Elderly() {
         keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
       >
         <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 60 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          <View style={styles.header}>
-            <Pressable onPress={() => router.replace("/")} style={styles.backButton}>
-              <Text style={styles.backButtonIcon}>← Home</Text>
-            </Pressable>
-            <View style={styles.headerTextContainer}>
-              <Text style={styles.headerTitle}>ElderCare</Text>
-              <Text style={styles.headerSub}>Health • Comfort • Care</Text>
+          <View style={[styles.header, { flexDirection: 'column', alignItems: 'stretch' }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}>
+              <Pressable onPress={() => router.replace("/")} style={styles.backButton}>
+                <Text style={styles.backButtonIcon}>← Home</Text>
+              </Pressable>
+              <View style={styles.headerTextContainer}>
+                <Text style={styles.headerTitle}>ElderCare</Text>
+                <Text style={styles.headerSub}>Health • Comfort • Care</Text>
+              </View>
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 16, gap: 10 }}>
+              {isSpeaking && (
+                <Pressable onPress={stop} style={styles.stopButton}>
+                  <Text style={{ fontSize: 13 }}>⏹️ Stop</Text>
+                </Pressable>
+              )}
             </View>
           </View>
 
@@ -425,8 +468,13 @@ export default function Elderly() {
         <View style={styles.storyModalBackdrop}>
           <View style={styles.storyBox}>
             <View style={styles.storyHeaderRow}>
-              <Text style={styles.storyTitle}>{selectedStory?.title}</Text>
-              <Pressable style={styles.closeBtn} onPress={() => setSelectedStory(null)}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+                <Text style={styles.storyTitle}>{selectedStory?.title}</Text>
+                <Pressable onPress={() => speak(`${selectedStory?.title}. ${selectedStory?.content}. The Lesson: ${selectedStory?.moral}`)} style={styles.ttsButtonSmall}>
+                  <Text style={{ fontSize: 16 }}>🔊</Text>
+                </Pressable>
+              </View>
+              <Pressable style={styles.closeBtn} onPress={() => { setSelectedStory(null); stop(); }}>
                 <Text style={styles.closeBtnText}>Close</Text>
               </Pressable>
             </View>
@@ -894,4 +942,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontStyle: 'italic',
   },
+  ttsButtonSmall: { paddingHorizontal: 12, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F5F9', borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0', justifyContent: 'center' },
+  stopButton: { paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#FEF2F2', borderRadius: 8, borderWidth: 1, borderColor: '#FCA5A5' },
+  langButton: { paddingHorizontal: 12, paddingVertical: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 8 },
+  langButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
+  readAllBtn: { flexDirection: 'row', backgroundColor: '#EEF2FF', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, borderColor: '#C7D2FE' },
+  readAllText: { color: COLORS.primary, fontWeight: 'bold', fontSize: 14 },
 });

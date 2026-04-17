@@ -6,7 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import * as ImagePicker from 'expo-image-picker';
 
 import * as Location from 'expo-location';
-import MapView, { Circle, Marker } from "react-native-maps";
+import MapView, { Circle, Marker } from "../components/Map";
 
 const ALZ_TABS = [
   { key: "notes", label: "Care Notes" },

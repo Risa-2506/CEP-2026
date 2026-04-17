@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  SafeAreaView
+  SafeAreaView,
+  Linking
 } from "react-native";
 import { useRouter } from "expo-router";
 
@@ -96,12 +97,8 @@ export default function Doctors() {
         <Text style={styles.price}>₹500 / visit</Text>
 
         <View style={styles.btnRow}>
-          <TouchableOpacity style={styles.callBtn}>
+          <TouchableOpacity style={styles.callBtn} onPress={() => Linking.openURL(`tel:${item.phone || '0000000000'}`)}>
             <Text style={styles.btnText}>Call</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.bookBtn}>
-            <Text style={styles.btnText}>Book</Text>
           </TouchableOpacity>
         </View>
       </View>
