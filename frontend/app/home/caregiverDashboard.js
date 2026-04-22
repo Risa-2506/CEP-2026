@@ -47,21 +47,21 @@ export default function CaregiverDashboard() {
       sub: "Authorized support", 
       color: "#2563EB" 
     },
-    { 
+    ...(isElderly ? [] : [{ 
       id: "location", 
       icon: "📍", 
       title: "Patient Location", 
       sub: "Live tracking", 
       color: "#3B82F6", 
-      locked: isElderly 
-    },
+      locked: false 
+    }]),
     { 
       id: "alerts", 
       icon: "🚨", 
       title: "Alerts", 
-      sub: "Fall & Safety logs", 
+      sub: "Fall logs", 
       color: "#DC2626", 
-      locked: isElderly 
+      locked: false 
     },
   ];
 

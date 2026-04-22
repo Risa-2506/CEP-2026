@@ -179,21 +179,11 @@ export default function GuardianDashboard() {
             <TouchableOpacity 
               style={[s.mainCard, { backgroundColor: isElderly ? "#EA580C" : "#DC2626" }]} 
               activeOpacity={0.8} 
-              onPress={() => {
-                if (isElderly) {
-                  Alert.alert(
-                    "🚧 Coming Soon",
-                    "Safety alerts for fall detection and abnormal movements in Elderly Care are currently being built. Check back soon!",
-                    [{ text: "OK" }]
-                  );
-                } else {
-                  router.push("/caregiver?tab=alerts");
-                }
-              }}
+              onPress={() => router.push("/caregiver?tab=alerts")}
             >
               <Text style={s.mainIcon}>{isElderly ? "🚼" : "🚨"}</Text>
-              <Text style={s.mainTitle}>{isElderly ? "FALL & MOVEMENT ALERTS" : "SAFETY ALERTS"}</Text>
-              <Text style={s.mainSub}>{isElderly ? "Fall detection & abnormal movements" : "View real-time movement logs"}</Text>
+              <Text style={s.mainTitle}>{isElderly ? "FALL ALERTS" : "SAFETY ALERTS"}</Text>
+              <Text style={s.mainSub}>{isElderly ? "Fall detection & emergency logs" : "View real-time movement logs"}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 

@@ -595,15 +595,32 @@ exports.getGeofence = async (req, res) => {
 //Alerts
 exports.geofenceAlert = async (req, res) => {
   try {
-    const { lat, lng, address } = req.body;
+    const { lat, lng, address, type } = req.body;
+    
+    // Resolve patientId safely regardless of patient vs caregiver caller
+    let patientId = req.user.linkedPatientId;
+    if (req.user.role === 'patient') {
+        const BaseAlzheimer = require('../models/Alzheimer');
+        const BaseElderly = require('../models/Elderly');
+        const alz = await BaseAlzheimer.findOne({ userId: req.user._id });
+        if (alz) patientId = alz._id;
+        else {
+            const eld = await BaseElderly.findOne({ userId: req.user._id });
+            if (eld) patientId = eld._id;
+        }
+    }
 
-    const patientId = req.user.linkedPatientId;
+    if (!patientId) patientId = req.user._id;
 
     // basic validation
     if (!lat || !lng) {
       return res.status(400).json({ message: "Location required" });
     }
-    const lastAlert = await Alert.findOne({ patientId })
+    
+    // We parse the alert classification or fallback to geofence
+    const alertType = type || "geofence";
+
+    const lastAlert = await Alert.findOne({ patientId, type: alertType })
       .sort({ createdAt: -1 });
 
     if (lastAlert && lastAlert.acknowledged === false) {
@@ -624,7 +641,7 @@ exports.geofenceAlert = async (req, res) => {
 
     const alert = new Alert({
       patientId,
-      type: "geofence",
+      type: alertType,
       lat,
       lng,
       address,
@@ -647,9 +664,32 @@ exports.geofenceAlert = async (req, res) => {
 
 exports.getAlerts = async (req, res) => {
   try {
-    const patientId = req.user.linkedPatientId;
+    const BaseAlzheimer = require('../models/Alzheimer');
+    const BaseElderly = require('../models/Elderly');
 
-    const alerts = await Alert.find({ patientId })
+    let possibleIds = [req.user.linkedPatientId, req.user._id];
+    
+    // Attempt to aggregate cross-profile alerts to avoid the "Elderly Caregiver can't see Alzheimer generated alerts" bug
+    if (req.user.role === 'caregiver' || req.user.role === 'guardian') {
+       let baseUserId = null;
+       
+       let alzProfile = await BaseAlzheimer.findById(req.user.linkedPatientId);
+       if (alzProfile) baseUserId = alzProfile.userId;
+       
+       if (!baseUserId) {
+           let eldProfile = await BaseElderly.findById(req.user.linkedPatientId);
+           if (eldProfile) baseUserId = eldProfile.userId;
+       }
+
+       if (baseUserId) {
+           const allAlz = await BaseAlzheimer.findOne({ userId: baseUserId });
+           const allEld = await BaseElderly.findOne({ userId: baseUserId });
+           if (allAlz) possibleIds.push(allAlz._id);
+           if (allEld) possibleIds.push(allEld._id);
+       }
+    }
+
+    const alerts = await Alert.find({ patientId: { $in: possibleIds } })
       .sort({ createdAt: -1 });
 
     res.json({

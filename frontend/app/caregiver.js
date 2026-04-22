@@ -22,7 +22,8 @@ const ELD_TABS = [
   { key: "notes", label: "Care Notes" },
   { key: "tasks", label: "Routines" },
   { key: "contacts", label: "Contacts" },
-  { key: "memories", label: "Memories" }
+  { key: "memories", label: "Memories" },
+  { key: "alerts", label: "Alert Logs" }
 ];
 
 const COLORS = {
@@ -93,16 +94,18 @@ export default function CaregiverPanel() {
     setLoading(true);
     try {
       if (isElderly) {
-        const [notesRes, contactsRes, memoriesRes, tasksRes] = await Promise.all([
+        const [notesRes, contactsRes, memoriesRes, tasksRes, alertsRes] = await Promise.all([
           elderlyAPI.notepad.getAll(),
           elderlyAPI.contacts.getAll(),
           elderlyAPI.memories.getAll(),
-          elderlyAPI.tasks.getAll()
+          elderlyAPI.tasks.getAll(),
+          alzheimerAPI.alerts.getAll()
         ]);
         if (notesRes.success) setNotes(notesRes.data || []);
         if (contactsRes.success) setContacts(contactsRes.data || []);
         if (memoriesRes.success) setMemories(memoriesRes.data || []);
         if (tasksRes.success) setEldTasks(tasksRes.data || []);
+        if (alertsRes.success) setAlerts(alertsRes.alerts || []);
       } else {
         const [notesRes, tasksRes, contactsRes, gameRes, resultsRes] = await Promise.all([
           alzheimerAPI.notes.getAll(),
@@ -141,16 +144,21 @@ export default function CaregiverPanel() {
   // Only runs when the Alerts tab is active to save battery/data
   useEffect(() => {
     let interval;
-    if (activeTab === 'alerts' && !isElderly) {
+    if (activeTab === 'alerts') {
       console.log("⏱️ Starting 5s Alert Polling...");
       interval = setInterval(async () => {
         try {
-          const [geoRes, alertsRes] = await Promise.all([
-            alzheimerAPI.geofence.get(),
-            alzheimerAPI.alerts.getAll()
-          ]);
-          if (geoRes.success) setGeofenceData(geoRes.geofence);
-          if (alertsRes.success) setAlerts(alertsRes.alerts || []);
+          if (!isElderly) {
+            const [geoRes, alertsRes] = await Promise.all([
+              alzheimerAPI.geofence.get(),
+              alzheimerAPI.alerts.getAll()
+            ]);
+            if (geoRes.success) setGeofenceData(geoRes.geofence);
+            if (alertsRes.success) setAlerts(alertsRes.alerts || []);
+          } else {
+            const alertsRes = await alzheimerAPI.alerts.getAll();
+            if (alertsRes.success) setAlerts(alertsRes.alerts || []);
+          }
         } catch (e) {
           console.log("Auto-polling error", e);
         }
@@ -611,13 +619,17 @@ export default function CaregiverPanel() {
     </View>
   );
 
-  const renderAlzAlerts = () => (
-    <View>
-      <Text style={styles.listSectionTitle}>Security Alert Logs</Text>
-      {alerts.length === 0 ? (
-        <Text style={styles.emptyText}>No alerts recorded yet.</Text>
-      ) : (
-        alerts.map(a => (
+  const renderAlzAlerts = () => {
+    // If Guardian/Caregiver is elderly, only show falls
+    const displayAlerts = isElderly ? alerts.filter(a => a.type === "fall") : alerts;
+
+    return (
+      <View>
+        <Text style={styles.listSectionTitle}>Security Alert Logs</Text>
+        {displayAlerts.length === 0 ? (
+          <Text style={styles.emptyText}>No alerts recorded yet.</Text>
+        ) : (
+          displayAlerts.map(a => (
           <Card key={a._id} style={[styles.listItem, !a.acknowledged && { borderLeftWidth: 4, borderLeftColor: COLORS.danger }]}>
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -649,7 +661,7 @@ export default function CaregiverPanel() {
         ))
       )}
     </View>
-  );
+  );};
 
   const renderContacts = () => (
     <View>
@@ -704,6 +716,7 @@ export default function CaregiverPanel() {
         case "memories": return renderEldMemories();
         case "tasks": return renderEldTasks();
         case "contacts": return renderContacts();
+        case "alerts": return renderAlzAlerts();
         default: return null;
       }
     } else {
