@@ -6,7 +6,7 @@ This project is a comprehensive healthcare mobile application developed using Re
 
 The system combines healthcare assistance, memory support, patient monitoring, emergency handling, and caregiver coordination into a single platform.
 
----
+
 
 # Features
 
@@ -24,7 +24,7 @@ A publicly accessible module that provides:
 * General wellness support feature
 * Fast illness search and remedy display
 
----
+
 
 ## 2. Doctor Directory Module
 
@@ -40,7 +40,7 @@ A healthcare directory where users can:
 * Organized doctor categorization
 * Easy navigation and search
 
----
+
 
 # Alzheimer Care Module
 
@@ -54,7 +54,7 @@ It focuses on helping Alzheimer patients through:
 * Emergency management
 * Safety monitoring
 
----
+
 
 ## Alzheimer Patient Features
 
@@ -97,7 +97,7 @@ Notifications are synchronized between:
 * Caregiver
 * Guardian
 
----
+
 
 # Caregiver Dashboard
 
@@ -113,7 +113,7 @@ Caregivers can:
 * Configure geofence safe zones
 * Monitor patient location
 
----
+
 
 # Guardian Dashboard
 
@@ -128,7 +128,7 @@ Guardians can:
 
 This dashboard mainly provides view-only monitoring access.
 
----
+
 
 # Elderly Care Module
 
@@ -142,7 +142,7 @@ The elderly care module supports elderly users through:
 
 The elderly module functions independently from the Alzheimer module and supports separate caregiver relationships.
 
----
+
 
 # Geofencing & Location Tracking
 
@@ -169,7 +169,7 @@ The application implements geofencing for patient safety.
 * Geocoding
 * Radius-based distance calculation
 
----
+
 
 # Sensor-Based Emergency Detection
 
@@ -190,7 +190,7 @@ for emergency and fall detection.
   * Emergency alerts are triggered
   * Caregivers and guardians are notified
 
----
+
 
 # Authentication & Access Control
 
@@ -207,7 +207,7 @@ Users dynamically receive dashboards depending on their relationship in the syst
 * Guardian
 * General user
 
----
+
 
 # Technology Stack
 
@@ -232,7 +232,7 @@ Users dynamically receive dashboards depending on their relationship in the syst
 * Notifications
 * Geofencing Logic
 
----
+
 
 # Project Goals
 
@@ -245,14 +245,14 @@ The goal of this project is to create a healthcare ecosystem that:
 * Encourages cognitive engagement
 * Creates a connected healthcare support platform
 
----
+
 
 # Future Enhancements
 
 * Real-time hospital integration
 * Smart wearable integration
 
----
+
 
 # Team Collaboration Workflow
 
@@ -262,7 +262,7 @@ Development follows a branch-based Git workflow:
 * Pull Requests are used for merging
 * Main branch remains stable and production-ready
 
----
+
 
 # Conclusion
 
