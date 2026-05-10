@@ -210,8 +210,14 @@ export default function CaregiverPanel() {
       Alert.alert("Error", "Name and Phone are required.");
       return;
     }
-    if (isElderly) await elderlyAPI.contacts.create(contactForm);
-    else await alzheimerAPI.contacts.create(contactForm);
+    const phoneDigits = contactForm.phone.replace(/[^0-9]/g, '');
+    if (phoneDigits.length !== 10) {
+      Alert.alert("Error", "Please enter a valid 10-digit phone number.");
+      return;
+    }
+    const payload = { ...contactForm, phone: phoneDigits };
+    if (isElderly) await elderlyAPI.contacts.create(payload);
+    else await alzheimerAPI.contacts.create(payload);
     setContactForm({ name: "", phone: "", relation: "" });
     loadAll();
   };

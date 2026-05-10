@@ -95,20 +95,57 @@ export default function ElderlySetup() {
         }
     }
 
-    if (caregiverPhone && !validatePhone(caregiverPhone)) {
+    if (!caregiverName.trim()) {
+      Alert.alert("Error", "Caregiver name is required");
+      return;
+    }
+
+    if (!caregiverPhone || !validatePhone(caregiverPhone)) {
         Alert.alert("Error", "Caregiver phone must be a valid 10-digit number");
         return;
     }
 
-    if (caregiverEmail && !emailRegex.test(caregiverEmail.trim())) {
+    if (!caregiverEmail || !emailRegex.test(caregiverEmail.trim())) {
         Alert.alert("Error", "Please enter a valid caregiver email address");
         return;
     }
 
+    const validGuardians = guardians.filter((g) => g.name.trim() || g.phone.trim() || g.email.trim());
+    if (validGuardians.length === 0) {
+        Alert.alert("Error", "At least one guardian is required");
+        return;
+    }
+
     // Validate Guardians
-    for (const g of guardians) {
-        if (g.phone && !validatePhone(g.phone)) {
+    for (const g of validGuardians) {
+        if (!g.name.trim() || !g.phone.trim() || !g.email.trim()) {
+            Alert.alert("Error", "All fields for added guardians are required");
+            return;
+        }
+        if (!validatePhone(g.phone)) {
             Alert.alert("Error", `Guardian ${g.name || ''} has an invalid phone number. Must be 10 digits.`);
+            return;
+        }
+        if (!emailRegex.test(g.email.trim())) {
+            Alert.alert("Error", `Guardian ${g.name || ''} has an invalid email address.`);
+            return;
+        }
+    }
+
+    const validEmergency = emergencyContacts.filter((e) => e.name.trim() || e.phone.trim() || e.relationship.trim());
+    if (validEmergency.length === 0) {
+        Alert.alert("Error", "At least one emergency contact is required");
+        return;
+    }
+
+    // Validate Emergency Contacts
+    for (const e of validEmergency) {
+        if (!e.name.trim() || !e.phone.trim() || !e.relationship.trim()) {
+            Alert.alert("Error", "All fields for added emergency contacts are required");
+            return;
+        }
+        if (!validatePhone(e.phone)) {
+            Alert.alert("Error", `Emergency contact ${e.name || ''} has an invalid phone number. Must be 10 digits.`);
             return;
         }
     }
@@ -123,12 +160,12 @@ export default function ElderlySetup() {
           phone: caregiverPhone.replace(/[^0-9]/g, ''),
           email: caregiverEmail.trim().toLowerCase(),
         },
-        guardians: guardians.filter((g) => g.name.trim() || g.phone.trim()).map((g) => ({
+        guardians: validGuardians.map((g) => ({
           name: g.name.trim(),
           phone: g.phone.replace(/[^0-9]/g, ''),
           email: g.email.trim().toLowerCase(),
         })),
-        emergencyContacts: emergencyContacts.filter((e) => e.name.trim() || e.phone.trim()).map((e) => ({
+        emergencyContacts: validEmergency.map((e) => ({
           name: e.name.trim(),
           phone: e.phone.replace(/[^0-9]/g, ''),
           relationship: e.relationship.trim(),
@@ -326,6 +363,38 @@ export default function ElderlySetup() {
           ))}
         </View>
 
+        {/* Emergency Contacts */}
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionLabel}>🚨 Emergency Contacts</Text>
+            <TouchableOpacity style={styles.addBtn} onPress={addEmergencyContact}>
+              <Text style={styles.addBtnText}>+ Add</Text>
+            </TouchableOpacity>
+          </View>
+
+          {emergencyContacts.map((contact, index) => (
+            <View key={index} style={styles.subCard}>
+              <View style={styles.subCardHeader}>
+                <Text style={styles.subCardTitle}>Contact {index + 1}</Text>
+                {emergencyContacts.length > 1 && (
+                  <TouchableOpacity onPress={() => removeEmergencyContact(index)}>
+                    <Text style={styles.removeText}>✕</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              <View style={styles.inputWrapper}>
+                <TextInput placeholder="Name" placeholderTextColor="#94A3B8" value={contact.name} onChangeText={(v) => updateEmergencyContact(index, "name", v)} style={styles.input} />
+              </View>
+              <View style={styles.inputWrapper}>
+                <TextInput placeholder="Phone" placeholderTextColor="#94A3B8" value={contact.phone} onChangeText={(v) => updateEmergencyContact(index, "phone", v)} style={styles.input} keyboardType="phone-pad" />
+              </View>
+              <View style={styles.inputWrapper}>
+                <TextInput placeholder="Relationship (e.g., Son, Daughter)" placeholderTextColor="#94A3B8" value={contact.relationship} onChangeText={(v) => updateEmergencyContact(index, "relationship", v)} style={styles.input} />
+              </View>
+            </View>
+          ))}
+        </View>
+
         {/* Submit */}
         <TouchableOpacity
           style={[styles.submitBtn, saving && { opacity: 0.7 }]}
@@ -343,40 +412,41 @@ export default function ElderlySetup() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0F172A" },
+  container: { flex: 1, backgroundColor: "#F5F7FB" },
   scrollContent: { flexGrow: 1 },
   header: {
-    backgroundColor: "#B45309",
+    backgroundColor: "#2563EB",
     paddingTop: 55, paddingBottom: 28, paddingHorizontal: 20,
     borderBottomLeftRadius: 24, borderBottomRightRadius: 24, alignItems: "center",
   },
   backBtn: { position: "absolute", top: 55, left: 20 },
-  backText: { color: "#FDE68A", fontSize: 15, fontWeight: "600" },
+  backText: { color: "#DBEAFE", fontSize: 15, fontWeight: "600" },
   headerIcon: { fontSize: 36, marginBottom: 8 },
   headerTitle: { fontSize: 22, fontWeight: "800", color: "#fff" },
-  headerSub: { color: "#FDE68A", fontSize: 13, marginTop: 4 },
+  headerSub: { color: "#DBEAFE", fontSize: 13, marginTop: 4 },
   sectionCard: {
-    backgroundColor: "#1E293B", marginHorizontal: 16, marginTop: 16,
-    borderRadius: 16, padding: 18, borderWidth: 1, borderColor: "#334155",
+    backgroundColor: "#FFFFFF", marginHorizontal: 16, marginTop: 16,
+    borderRadius: 16, padding: 18, borderWidth: 1, borderColor: "#E2E8F0",
+    shadowColor: "#1E3A8A", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2,
   },
   sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  sectionLabel: { fontSize: 16, fontWeight: "700", color: "#F1F5F9", marginBottom: 4 },
+  sectionLabel: { fontSize: 16, fontWeight: "700", color: "#0F172A", marginBottom: 4 },
   sectionHint: { fontSize: 12, color: "#64748B", marginBottom: 14 },
-  addBtn: { backgroundColor: "#B45309", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+  addBtn: { backgroundColor: "#38BDF8", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   addBtnText: { color: "#fff", fontSize: 13, fontWeight: "600" },
   subCard: {
-    backgroundColor: "#0F172A", borderRadius: 12, padding: 14, marginTop: 10,
-    borderWidth: 1, borderColor: "#1E293B",
+    backgroundColor: "#F8FAFC", borderRadius: 12, padding: 14, marginTop: 10,
+    borderWidth: 1, borderColor: "#E2E8F0",
   },
   subCardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
-  subCardTitle: { color: "#94A3B8", fontSize: 13, fontWeight: "600" },
+  subCardTitle: { color: "#64748B", fontSize: 13, fontWeight: "700" },
   removeText: { color: "#EF4444", fontSize: 16, fontWeight: "700" },
-  inputWrapper: { backgroundColor: "#0F172A", borderRadius: 12, marginBottom: 10, borderWidth: 1, borderColor: "#334155" },
-  input: { paddingHorizontal: 14, paddingVertical: 13, fontSize: 15, color: "#E2E8F0" },
+  inputWrapper: { backgroundColor: "#F1F5F9", borderRadius: 12, marginBottom: 10, borderWidth: 1, borderColor: "#CBD5E1" },
+  input: { paddingHorizontal: 14, paddingVertical: 13, fontSize: 15, color: "#0F172A" },
   submitBtn: {
-    backgroundColor: "#B45309", marginHorizontal: 16, marginTop: 20, paddingVertical: 16,
+    backgroundColor: "#2563EB", marginHorizontal: 16, marginTop: 20, paddingVertical: 16,
     borderRadius: 14, alignItems: "center",
-    shadowColor: "#B45309", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5,
+    shadowColor: "#2563EB", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5,
   },
   submitText: { color: "#fff", fontSize: 17, fontWeight: "700" },
 });

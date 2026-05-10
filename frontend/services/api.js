@@ -1,8 +1,8 @@
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://192.168.1.36:5000/remedies";
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://192.168.1.33:5000/remedies";
 // ================= CONFIG =================
 
 // 🔥 PUT YOUR LOCAL IP HERE (IMPORTANT)
-const LOCAL_IP = "192.168.1.36"; // Updated to match Expo IP
+const LOCAL_IP = "192.168.1.33"; // Updated to match Expo IP
 
 const configuredBase = (process.env.EXPO_PUBLIC_API_URL || "").replace(/\/$/, "");
 

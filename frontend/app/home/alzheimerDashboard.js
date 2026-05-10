@@ -11,7 +11,7 @@ export default function AlzheimerDashboard() {
     { id: "game", icon: "🧠", title: "Memory Game", sub: "Play to train memory", color: "#7C3AED" },
     { id: "tasks", icon: "✅", title: "Tasks / Routine", sub: "Daily activities", color: "#16A34A" },
     { id: "contacts", icon: "📞", title: "Contacts", sub: "Important contacts", color: "#2563EB" },
-    { id: "notes", icon: "📋", title: "Care Notes", sub: "Instructions & notes", color: "#B45309" },
+    { id: "notes", icon: "📋", title: "Care Notes", sub: "Instructions & notes", color: "#D97706" },
   ];
 
   return (
@@ -56,7 +56,7 @@ export default function AlzheimerDashboard() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0F172A",
+    backgroundColor: "#F0F6FF",
   },
   header: {
     backgroundColor: "#7C3AED",
@@ -66,6 +66,11 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
     alignItems: "center",
+    shadowColor: "#7C3AED",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 6,
   },
   backBtn: {
     position: "absolute",
@@ -94,25 +99,25 @@ const styles = StyleSheet.create({
   emergencyBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#991B1B",
+    backgroundColor: "#FEF2F2",
     marginHorizontal: 16,
     marginTop: 16,
     padding: 16,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#EF4444",
+    borderWidth: 1.5,
+    borderColor: "#FCA5A5",
     gap: 14,
   },
   emergencyIcon: {
     fontSize: 32,
   },
   emergencyTitle: {
-    color: "#FCA5A5",
+    color: "#DC2626",
     fontSize: 18,
     fontWeight: "800",
   },
   emergencySub: {
-    color: "#FECACA",
+    color: "#EF4444",
     fontSize: 12,
     marginTop: 2,
   },
@@ -124,30 +129,35 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   card: {
-    backgroundColor: "#1E293B",
-    borderRadius: 16,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
     padding: 18,
     width: "48%",
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: "#E2E8F0",
     alignItems: "center",
+    shadowColor: "#0E7490",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 6,
+    elevation: 2,
   },
   cardIconBox: {
-    width: 50,
-    height: 50,
-    borderRadius: 15,
+    width: 54,
+    height: 54,
+    borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 10,
   },
   cardIcon: {
-    fontSize: 24,
+    fontSize: 26,
   },
   cardTitle: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#F1F5F9",
+    color: "#0F172A",
     textAlign: "center",
   },
   cardSub: {

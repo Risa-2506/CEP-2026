@@ -24,20 +24,21 @@ export default function Home() {
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
-      Animated.timing(headerSlide, { toValue: 0, duration: 500, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
+      Animated.spring(headerSlide, { toValue: 0, tension: 20, friction: 7, useNativeDriver: true }),
     ]).start();
 
-    // Stagger card animations
+    // Staggered spring animations for cards
     const animations = cardAnims.map((anim, i) =>
-      Animated.timing(anim, {
+      Animated.spring(anim, {
         toValue: 1,
-        duration: 400,
-        delay: 100 + i * 80,
+        tension: 50,
+        friction: 8,
+        delay: 200 + i * 100,
         useNativeDriver: true,
       })
     );
-    Animated.stagger(80, animations).start();
+    Animated.parallel(animations).start();
   }, []);
 
   // Auth-aware navigation
@@ -112,7 +113,7 @@ export default function Home() {
       icon: "👴",
       title: "Elderly Care",
       sub: "Health & memory tracking",
-      colors: ["#B45309", "#F59E0B"],
+      colors: ["#2563EB", "#60A5FA"],
       requiresLogin: true,
     },
     {
@@ -284,15 +285,20 @@ export default function Home() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0F172A",
+    backgroundColor: "#F0F6FF",
   },
   header: {
-    backgroundColor: "#1E40AF",
+    backgroundColor: "#0E7490",
     paddingTop: 55,
-    paddingBottom: 24,
+    paddingBottom: 28,
     paddingHorizontal: 20,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    shadowColor: "#0E7490",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
   headerTop: {
     flexDirection: "row",
@@ -300,12 +306,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   welcome: {
-    color: "#93C5FD",
+    color: "#CFFAFE",
     fontSize: 14,
+    fontWeight: "500",
   },
   title: {
     color: "#fff",
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: "800",
     letterSpacing: 0.5,
   },
@@ -313,11 +320,11 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(255,255,255,0.25)",
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.3)",
+    borderColor: "rgba(255,255,255,0.4)",
   },
   avatarText: {
     color: "#fff",
@@ -325,12 +332,13 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   syncBtn: {
-    backgroundColor: "rgba(255,255,255,0.15)",
+    backgroundColor: "rgba(255,255,255,0.2)",
     paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 15,
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
+    borderColor: "rgba(255,255,255,0.3)",
   },
   syncBtnText: {
     color: "#fff",
@@ -338,27 +346,27 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   loginChip: {
-    backgroundColor: "rgba(255,255,255,0.15)",
+    backgroundColor: "rgba(255,255,255,0.2)",
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.25)",
+    borderColor: "rgba(255,255,255,0.35)",
   },
   loginChipText: {
     color: "#fff",
-    fontWeight: "600",
+    fontWeight: "700",
     fontSize: 13,
   },
   roleBanner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.12)",
+    backgroundColor: "rgba(255,255,255,0.18)",
     marginTop: 16,
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.15)",
+    borderColor: "rgba(255,255,255,0.25)",
   },
   roleBannerIcon: {
     fontSize: 28,
@@ -370,13 +378,13 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   roleBannerSub: {
-    color: "#93C5FD",
+    color: "#CFFAFE",
     fontSize: 12,
     marginTop: 2,
   },
   roleBannerArrow: {
     color: "#fff",
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: "700",
   },
   section: {
@@ -385,7 +393,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#F1F5F9",
+    color: "#0F172A",
     marginBottom: 2,
   },
   sectionSub: {
@@ -394,30 +402,30 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   card: {
-    backgroundColor: "#1E293B",
-    borderRadius: 16,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
     padding: 16,
     marginBottom: 12,
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#334155",
-    shadowColor: "#000",
+    borderColor: "#E2E8F0",
+    shadowColor: "#0E7490",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
     elevation: 3,
   },
   cardIconBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+    width: 52,
+    height: 52,
+    borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 14,
   },
   cardIcon: {
-    fontSize: 24,
+    fontSize: 26,
   },
   cardContent: {
     flex: 1,
@@ -425,7 +433,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#F1F5F9",
+    color: "#0F172A",
   },
   cardSub: {
     color: "#64748B",
@@ -439,7 +447,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   cardArrow: {
-    color: "#475569",
+    color: "#94A3B8",
     fontSize: 24,
     fontWeight: "300",
   },

@@ -458,8 +458,14 @@ export default function AlzheimerPatient() {
       Alert.alert("Error", "Name and Phone are required.");
       return;
     }
+    const phoneDigits = contactForm.phone.replace(/[^0-9]/g, '');
+    if (phoneDigits.length !== 10) {
+      Alert.alert("Error", "Please enter a valid 10-digit phone number.");
+      return;
+    }
+    const payload = { ...contactForm, phone: phoneDigits };
     try {
-      await alzheimerAPI.contacts.create(contactForm);
+      await alzheimerAPI.contacts.create(payload);
       setContactForm({ name: "", phone: "", relation: "" });
       await loadAll();
     } catch (e) {
@@ -643,8 +649,8 @@ const styles = StyleSheet.create({
   taskTextDone: { textDecorationLine: "line-through", color: COLORS.muted },
   
   // Contacts
-  contactIcon: { width: 50, height: 50, borderRadius: 25, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center", marginRight: 15 },
-  contactName: { fontSize: 18, fontWeight: "700" },
+  contactIcon: { width: 50, height: 50, borderRadius: 25, backgroundColor: "#ECFEFF", alignItems: "center", justifyContent: "center", marginRight: 15 },
+  contactName: { fontSize: 18, fontWeight: "700", color: "#0F172A" },
   contactPhone: { fontSize: 16, color: COLORS.primary, marginVertical: 4 },
   contactRelation: { fontSize: 14, color: COLORS.muted },
   callBtn: { marginLeft: "auto", backgroundColor: COLORS.success, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12 },
@@ -679,6 +685,6 @@ const styles = StyleSheet.create({
   langButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
   ttsButton: { paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#F1F5F9', borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0', flexDirection: 'row', alignItems: 'center' },
   ttsButtonTask: { paddingHorizontal: 10, paddingVertical: 8, marginLeft: 10, backgroundColor: '#F1F5F9', borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  readAllBtn: { flexDirection: 'row', backgroundColor: '#EEF2FF', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, borderColor: '#C7D2FE' },
+  readAllBtn: { flexDirection: 'row', backgroundColor: '#ECFEFF', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, borderColor: '#A5F3FC' },
   readAllText: { color: COLORS.primary, fontWeight: 'bold', fontSize: 14 },
 });

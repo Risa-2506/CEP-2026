@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, SafeAreaView, Platform, StatusBar, KeyboardAvoidingView, Linking } from "react-native";
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, SafeAreaView, Platform, StatusBar, KeyboardAvoidingView, Linking } from "react-native";
 import Swiper from "react-native-deck-swiper";
 import { elderlyAPI } from "../services/api";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -272,14 +272,22 @@ export default function Elderly() {
         <Button 
           label="Add Contact" 
           onPress={async () => {
-            const phone = forms.contact.phone.replace(/[^0-9]/g, '');
-            if (!forms.contact.name.trim() || phone.length !== 10) {
-              Alert.alert("Error", "Please enter a valid 10-digit phone number.");
-              return;
+            try {
+              if (!forms.contact.name.trim()) {
+                Alert.alert("Error", "Please enter a contact name.");
+                return;
+              }
+              const phone = forms.contact.phone.replace(/[^0-9]/g, '');
+              if (phone.length !== 10) {
+                Alert.alert("Error", "Please enter a valid 10-digit phone number.");
+                return;
+              }
+              await elderlyAPI.contacts.create({ ...forms.contact, phone });
+              setForms((prev) => ({ ...prev, contact: { name: "", phone: "" } }));
+              loadAll();
+            } catch (e) {
+              Alert.alert("Error", "Failed to save contact. Please try again.");
             }
-            await elderlyAPI.contacts.create({ ...forms.contact, phone });
-            setForms((prev) => ({ ...prev, contact: { name: "", phone: "" } }));
-            loadAll();
           }} 
         />
       </Card>
@@ -410,31 +418,28 @@ export default function Elderly() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView 
+      {/* Header - outside ScrollView to avoid gap */}
+      <View style={styles.header}>
+        <Pressable onPress={() => router.replace("/")} style={styles.backButton}>
+          <Text style={styles.backButtonIcon}>← Home</Text>
+        </Pressable>
+        <View style={styles.headerTextContainer}>
+          <Text style={styles.headerTitle}>ElderCare</Text>
+          <Text style={styles.headerSub}>Health • Comfort • Care</Text>
+        </View>
+        {isSpeaking && (
+          <Pressable onPress={stop} style={styles.stopButton}>
+            <Text style={{ fontSize: 12, color: '#DC2626', fontWeight: '700' }}>⏹ Stop</Text>
+          </Pressable>
+        )}
+      </View>
+
+      <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
         keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
       >
         <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 60 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          <View style={[styles.header, { flexDirection: 'column', alignItems: 'stretch' }]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}>
-              <Pressable onPress={() => router.replace("/")} style={styles.backButton}>
-                <Text style={styles.backButtonIcon}>← Home</Text>
-              </Pressable>
-              <View style={styles.headerTextContainer}>
-                <Text style={styles.headerTitle}>ElderCare</Text>
-                <Text style={styles.headerSub}>Health • Comfort • Care</Text>
-              </View>
-            </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 16, gap: 10 }}>
-              {isSpeaking && (
-                <Pressable onPress={stop} style={styles.stopButton}>
-                  <Text style={{ fontSize: 13 }}>⏹️ Stop</Text>
-                </Pressable>
-              )}
-            </View>
-          </View>
-
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabs}>
             {TABS.map((tab) => (
               <Pressable
@@ -496,7 +501,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: COLORS.bg,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0
   },
   container: {
     flex: 1,
@@ -505,11 +509,16 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: COLORS.primary,
-    padding: 20,
-    borderRadius: 20,
-    marginBottom: 16,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 16 : 16,
+    paddingBottom: 16,
+    paddingHorizontal: 20,
     flexDirection: "row",
-    alignItems: "center"
+    alignItems: "center",
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
   },
   backButton: {
     marginRight: 15,
@@ -536,14 +545,15 @@ const styles = StyleSheet.create({
   },
   tabs: {
     flexDirection: "row",
-    marginBottom: 10
+    marginBottom: 10,
+    marginTop: 12,
   },
   tab: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
     borderRadius: 20,
     backgroundColor: "#fff",
-    marginRight: 10,
+    marginRight: 8,
     borderWidth: 1,
     borderColor: COLORS.border
   },
@@ -551,10 +561,13 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary
   },
   tabText: {
-    color: COLORS.muted
+    color: COLORS.muted,
+    fontSize: 13,
+    fontWeight: "500",
   },
   tabTextActive: {
-    color: "#fff"
+    color: "#fff",
+    fontWeight: "700",
   },
   card: {
     backgroundColor: COLORS.card,
