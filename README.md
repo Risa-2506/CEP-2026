@@ -1,253 +1,271 @@
-# 📁 Frontend Project Structure Guide
+# Healthcare Assistance & Patient Monitoring System
 
-This project follows a structured approach to ensure smooth collaboration and easy merging.
+## Overview
 
----
+This project is a comprehensive healthcare mobile application developed using React Native, Node.js, Express, and MongoDB. The application is designed to support general users, elderly individuals, Alzheimer patients, caregivers, and guardians through an interconnected healthcare ecosystem.
 
-## 📂 Folder Structure
-
-### `app/`
-
-* Contains all screens and navigation (Expo Router based)
-* This is the **core of the app**
-* Example usage:
-
-  * Home screens
-  * Auth screens (login/register)
-  * Feature screens
+The system combines healthcare assistance, memory support, patient monitoring, emergency handling, and caregiver coordination into a single platform.
 
 ---
 
-### `assets/`
+# Features
 
-* Stores all static resources
-* Example:
+## 1. Home Remedies Module
 
-  * Images
-  * Icons
-  * Fonts
+A publicly accessible module that provides:
 
----
+* Natural remedies for common illnesses
+* Search-based illness lookup
+* Remedy suggestions for minor health conditions
 
-### `components/`
+### Key Points
 
-* Reusable UI components
-* Use this for elements used in multiple places
-* Example:
-
-  * Buttons
-  * Cards
-  * Input fields
+* No login/signup required
+* General wellness support feature
+* Fast illness search and remedy display
 
 ---
 
-### `constants/`
+## 2. Doctor Directory Module
 
-* Stores global constants/config
-* Example:
+A healthcare directory where users can:
 
-  * Colors
-  * API URLs
-  * App-wide variables
+* View doctors based on specialization
+* Access doctor details and contact information
+* Search doctors according to medical needs
 
----
+### Key Points
 
-### `hooks/`
-
-* Custom React hooks
-* Used for reusable logic
-* Example:
-
-  * API handling
-  * State management
-  * Authentication logic
+* Authentication required for complete access
+* Organized doctor categorization
+* Easy navigation and search
 
 ---
 
-### `services/`
+# Alzheimer Care Module
 
-* Handles API calls to backend
-* Central place for all network requests
-* Example:
+The Alzheimer module is one of the core intelligent systems of the application.
 
-  * GET / POST requests
-  * Axios setup
+It focuses on helping Alzheimer patients through:
 
----
-
-## ⚠️ Rules to Follow
-
-* Do NOT push directly to `main`
-* Always create a new branch:
-
-  * `feature/login`
-  * `feature/dashboard`
-* Keep code inside proper folders
-* Do NOT create random files in root
-* Reuse components instead of duplicating code
+* Memory assistance
+* Cognitive support
+* Caregiver coordination
+* Emergency management
+* Safety monitoring
 
 ---
 
-## 🚀 Running the Project
+## Alzheimer Patient Features
 
-```bash
-cd frontend
-npm install
-npx expo start
-```
+### Memory Game System
 
----
+A cognitive training feature where:
 
-## 🧠 Notes
+* Caregivers upload family member images and questions
+* Patients play recognition-based memory games
+* Scores are calculated automatically
+* Results are shared with caregivers and guardians
 
-* Follow the folder structure strictly
-* Keep code clean and modular
-* Ask before changing core structure
+### Notes & Task Assistance
 
-## 📱 App Routing Structure (Expo Router)
+Patients can:
 
-### `app/_layout.tsx`
+* View notes added by caregivers
+* Manage reminders and daily tasks
+* Follow routines and medicine schedules
 
-* Root layout of the app
-* Controls overall navigation
+### Emergency Contacts
 
-### `app/(tabs)/_layout.tsx`
+Patients can instantly contact:
 
-* Defines bottom tab navigation
+* Caregivers
+* Guardians
+* Family members
 
-### `app/(tabs)/index.tsx`
+### Reminder & Notification System
 
-* Default Home screen
+The app continuously sends:
 
-### `app/auth/`
+* Medication reminders
+* Daily routine reminders
+* Task notifications
 
-* Authentication screens (login/register)
+Notifications are synchronized between:
 
-### `app/home/`
-
-* Main app feature screens
-
-### Notes:
-
-* `index.tsx` = default screen of folder
-* `(folder)` = grouping folder (not part of URL)
-
-
-# 🔧 Backend Structure Guide
-
-This backend follows a modular structure to ensure clean code, scalability, and easy collaboration.
+* Patient
+* Caregiver
+* Guardian
 
 ---
 
-## 📂 Folder Structure
+# Caregiver Dashboard
 
-### `server.js`
+The caregiver dashboard acts as a patient management and monitoring system.
 
-* Entry point of the backend
-* Starts the Express server
-* Handles middleware and base routes
+Caregivers can:
 
----
-
-### `config/`
-
-* Contains configuration files
-* Example:
-
-  * Database connection (`db.js`)
-  * Environment setup
+* Create memory game questions
+* Upload family images
+* Track memory game scores
+* Add notes and reminders
+* Set daily tasks
+* Configure geofence safe zones
+* Monitor patient location
 
 ---
 
-### `controllers/`
+# Guardian Dashboard
 
-* Contains business logic
-* Handles request and response
-* Example:
+The guardian dashboard provides monitoring support for family members.
 
-  * Login logic
-  * Data processing
+Guardians can:
 
-👉 Controllers DO NOT define routes, only logic
+* Receive emergency alerts
+* View patient location
+* Monitor memory game scores
+* View important patient updates
 
----
-
-### `routes/`
-
-* Defines API endpoints
-* Connects routes to controllers
-
-👉 Example:
-
-```js
-router.get('/users', getUsers);
-```
+This dashboard mainly provides view-only monitoring access.
 
 ---
 
-### `models/`
+# Elderly Care Module
 
-* Defines database schemas
-* Represents structure of data
-* Used for database operations
+The elderly care module supports elderly users through:
 
----
+* Memory lane / nostalgic support
+* Health tracking
+* Notes and reminders
+* Emergency support
+* Optional caregiver linkage
 
-### `.env`
-
-* Stores environment variables
-* Example:
-
-  * Database URL
-  * Port
-  * API keys
-
-⚠️ Do NOT push sensitive data
+The elderly module functions independently from the Alzheimer module and supports separate caregiver relationships.
 
 ---
 
-### `.gitignore`
+# Geofencing & Location Tracking
 
-* Prevents unnecessary files from being pushed
-* Example:
+The application implements geofencing for patient safety.
 
-  * node_modules
-  * .env
+### Working
 
----
+* Caregiver sets a safe zone location and radius
+* Patient device continuously shares GPS location
+* System checks whether the patient is inside the safe zone
 
-### `package.json`
+### If Patient Exits Safe Zone
 
-* Contains dependencies and scripts
-* Used to install and run the backend
+* Alerts are sent to:
 
----
+  * Caregiver
+  * Guardian
+* Live location is shared
 
-## 🔁 Request Flow (IMPORTANT)
+### Technologies Used
 
-```text
-Client → Route → Controller → Model → Database
-```
-
----
-
-## ⚠️ Rules to Follow
-
-* Do NOT write logic inside routes
-* Keep controllers clean and modular
-* Use proper folder structure
-* Do NOT push `.env` file
-* Create separate branches for features
+* GPS Tracking
+* Geolocation APIs
+* Geocoding
+* Radius-based distance calculation
 
 ---
 
-## 🚀 Running the Backend
+# Sensor-Based Emergency Detection
 
-```bash
-cd backend
-npm install
-npm start
-```
+The system uses smartphone sensors such as:
 
-Run on port 5000
-Dont edit server.js
+* Accelerometer
+* Gyroscope
+* GPS
+
+for emergency and fall detection.
+
+## Fall Detection Flow
+
+* Sudden abnormal movement is detected
+* System waits for user confirmation
+* If no response is received within a fixed time:
+
+  * Emergency alerts are triggered
+  * Caregivers and guardians are notified
+
+---
+
+# Authentication & Access Control
+
+The application uses:
+
+* Global authentication system
+* Feature-specific onboarding
+* Relationship-based dashboard access
+
+Users dynamically receive dashboards depending on their relationship in the system:
+
+* Patient
+* Caregiver
+* Guardian
+* General user
+
+---
+
+# Technology Stack
+
+## Frontend
+
+* React Native
+* Expo Router
+
+## Backend
+
+* Node.js
+* Express.js
+
+## Database
+
+* MongoDB
+
+## Additional Technologies
+
+* Expo Location
+* Expo Sensors
+* Notifications
+* Geofencing Logic
+
+---
+
+# Project Goals
+
+The goal of this project is to create a healthcare ecosystem that:
+
+* Enhances patient safety
+* Supports Alzheimer and elderly patients
+* Assists caregivers and family members
+* Provides emergency monitoring
+* Encourages cognitive engagement
+* Creates a connected healthcare support platform
+
+---
+
+# Future Enhancements
+
+* Real-time hospital integration
+* Smart wearable integration
+
+---
+
+# Team Collaboration Workflow
+
+Development follows a branch-based Git workflow:
+
+* Features are developed on separate branches
+* Pull Requests are used for merging
+* Main branch remains stable and production-ready
+
+---
+
+# Conclusion
+
+This project aims to build a connected healthcare support system that combines healthcare accessibility, patient monitoring, memory assistance, emergency detection, and caregiver coordination into a single intelligent platform.
+
+The application focuses especially on improving the quality of life for Alzheimer and elderly patients while supporting caregivers and family members through smart monitoring and communication systems.
