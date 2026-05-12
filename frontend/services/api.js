@@ -21,7 +21,7 @@ const ELDERLY_BASE = `${API_ROOT}/elderly`;
 // ================= HELPERS =================
 
 // ✅ Prevent infinite loading
-const fetchWithTimeout = (url, options, timeout = 5000) => {
+const fetchWithTimeout = (url, options, timeout = 30000) => {
     return Promise.race([
         fetch(url, options),
         new Promise((_, reject) =>
@@ -48,7 +48,7 @@ export const setGlobalToken = (token) => {
 
 // ================= CORE REQUEST =================
 
-const request = async (method, path, body = null) => {
+const request = async (method, path, body = null, timeout = 30000) => {
     const headers = { "Content-Type": "application/json" };
 
     if (globalAuthToken) {
@@ -68,7 +68,7 @@ const request = async (method, path, body = null) => {
             const url = `${base}${path}`;
             console.log("🔍 Trying API:", url);
 
-            const res = await fetchWithTimeout(url, options, 5000);
+            const res = await fetchWithTimeout(url, options, timeout);
             const data = await safeJson(res);
 
             if (!res.ok) {
@@ -94,12 +94,12 @@ export const getRemedies = async (search = "") => {
         ? `${REMEDY_BASE}?search=${search}`
         : REMEDY_BASE;
 
-    const res = await fetchWithTimeout(url, {}, 5000);
+    const res = await fetchWithTimeout(url, {});
     return res.json();
 };
 
 export const getSingleRemedy = async (id) => {
-    const res = await fetchWithTimeout(`${REMEDY_BASE}/${id}`, {}, 5000);
+    const res = await fetchWithTimeout(`${REMEDY_BASE}/${id}`, {});
     return res.json();
 };
 
