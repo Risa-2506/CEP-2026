@@ -1,14 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
-import { setGlobalToken } from "../services/api";
+import { authAPI, setGlobalToken, getApiBaseUrl } from "../services/api";
 
 const AuthContext = createContext();
-
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
-if (!BASE_URL) {
-  console.error("❌ EXPO_PUBLIC_API_URL is NOT defined in your .env file!");
-} else {
-  console.log("📍 API URL configured as:", BASE_URL);
-}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -19,21 +12,16 @@ export function AuthProvider({ children }) {
     setGlobalToken(token);
   }, [token]);
 
+  useEffect(() => {
+    console.log("📍 Connected to API Base:", getApiBaseUrl());
+  }, []);
+
   const isLoggedIn = !!user && !!token;
 
   const login = async (email, password) => {
     setLoading(true);
     try {
-      const res = await fetch(`${BASE_URL}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || "Login failed");
-      }
+      const data = await authAPI.login(email, password);
 
       setUser({
         _id: data._id,
@@ -56,22 +44,16 @@ export function AuthProvider({ children }) {
   const signup = async (name, email, password) => {
     setLoading(true);
     try {
-      const res = await fetch(`${BASE_URL}/auth/signup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || "Signup failed");
-      }
+      const data = await authAPI.signup(name, email, password);
 
       setUser({
         _id: data._id,
         name: data.name,
         email: data.email,
         role: data.role,
+        linkedPatientId: data.linkedPatientId,
+        linkedPatientName: data.linkedPatientName,
+        linkedPatientType: data.linkedPatientType,
       });
       setToken(data.token);
       return { success: true, user: data };
@@ -85,16 +67,7 @@ export function AuthProvider({ children }) {
   const alzheimerSignup = async (details) => {
     setLoading(true);
     try {
-      const res = await fetch(`${BASE_URL}/auth/alzheimer-signup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(details),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || "Alzheimer Signup failed");
-      }
+      const data = await authAPI.alzheimerSignup(details);
 
       setUser({
         _id: data._id,
@@ -117,16 +90,7 @@ export function AuthProvider({ children }) {
   const elderlySignup = async (details) => {
     setLoading(true);
     try {
-      const res = await fetch(`${BASE_URL}/auth/elderly-signup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(details),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || "Elderly Signup failed");
-      }
+      const data = await authAPI.elderlySignup(details);
 
       setUser({
         _id: data._id,
@@ -149,17 +113,15 @@ export function AuthProvider({ children }) {
   const logout = () => {
     setUser(null);
     setToken(null);
+    setGlobalToken(null);
   };
 
   // Refresh user data from server
   const refreshUser = async () => {
     if (!token) return;
     try {
-      const res = await fetch(`${BASE_URL}/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (res.ok) {
+      const data = await authAPI.getMe(token);
+      if (data && data._id) {
         setUser({
           _id: data._id,
           name: data.name,

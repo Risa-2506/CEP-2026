@@ -14,7 +14,7 @@ import {
 import { useRouter } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+import { elderlyAPI } from "../../services/api";
 
 export default function ElderlySetup() {
   const { user, isLoggedIn, token, refreshUser, elderlySignup } = useAuth();
@@ -187,21 +187,7 @@ export default function ElderlySetup() {
           }
       } else {
           // CASE B: Logged-in setup
-          const res = await fetch(`${BASE_URL}/elderly`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(details),
-          });
-
-          const data = await res.json();
-
-          if (!res.ok) {
-            throw new Error(data.message || "Failed to save profile");
-          }
-
+          await elderlyAPI.profile.create(details, token);
           await refreshUser();
           router.replace("/home/elderlyDashboard");
       }

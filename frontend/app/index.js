@@ -10,8 +10,7 @@ import {
   Alert,
 } from "react-native";
 import { useAuth } from "../context/AuthContext";
-
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+import { authAPI, alzheimerAPI, elderlyAPI } from "../services/api";
 
 export default function Home() {
   const router = useRouter();
@@ -64,13 +63,11 @@ export default function Home() {
           router.push(feature === "elderly" ? "/home/elderly-setup" : "/home/alzheimer-setup");
         } else {
           try {
-            const endpoint = feature === "elderly" ? "/elderly/check" : "/alzheimer/check";
-            const res = await fetch(`${BASE_URL}${endpoint}`, {
-              headers: { Authorization: `Bearer ${token}` }
-            });
-            const data = await res.json();
+            const data = feature === "elderly"
+              ? await elderlyAPI.profile.check(token)
+              : await alzheimerAPI.profile.check(token);
 
-            if (data.hasProfile) {
+            if (data && data.hasProfile) {
               router.push(feature === "elderly" ? "/elderly" : "/alzheimer");
             } else {
               router.push(feature === "elderly" ? "/home/elderly-setup" : "/home/alzheimer-setup");
@@ -145,18 +142,14 @@ export default function Home() {
 
   const handleSyncRole = async () => {
     try {
-      const res = await fetch(`${BASE_URL}/auth/sync-role`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (data.success) {
+      const data = await authAPI.syncRole(token);
+      if (data && data.success) {
         Alert.alert("Success", "Your profile has been synchronized. If you are a caregiver, your dashboard should now be available.");
       } else {
-        Alert.alert("Sync Error", data.message || "Could not sync role");
+        Alert.alert("Sync Error", (data && data.message) || "Could not sync role");
       }
     } catch (e) {
-      Alert.alert("Error", "Failed to reach server");
+      Alert.alert("Error", e.message || "Failed to reach server");
     }
   };
 

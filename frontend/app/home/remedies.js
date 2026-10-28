@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   StyleSheet
 } from "react-native";
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://10.227.184.79:5000";
+import { remedyAPI } from "../../services/api";
 
 export default function Remedies() {
   const [data, setData] = useState([]);
@@ -18,10 +18,10 @@ export default function Remedies() {
 
   const fetchRemedies = async (query = "") => {
     try {
-      const url = query ? `${BASE_URL}/remedies?search=${query}` : `${BASE_URL}/remedies`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`Server error ${res.status}`);
-      const json = await res.json();
+      const json = await remedyAPI.getAll(query);
+
+
+
       setData(Array.isArray(json) ? json : []);
       setError("");
     } catch (err) {
@@ -33,9 +33,9 @@ export default function Remedies() {
 
   const fetchDetails = async (id) => {
     try {
-      const res = await fetch(`${BASE_URL}/remedies/${id}`);
-      if (!res.ok) throw new Error(`Server error ${res.status}`);
-      const json = await res.json();
+      const json = await remedyAPI.getById(id);
+
+
       setDetails((prev) => ({ ...prev, [id]: json }));
     } catch (err) {
       console.error("Fetch remedy details failed", err);

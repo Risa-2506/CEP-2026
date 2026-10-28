@@ -14,7 +14,7 @@ import {
 import { useRouter } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+import { alzheimerAPI } from "../../services/api";
 
 export default function AlzheimerSetup() {
   const { user, isLoggedIn, token, refreshUser, alzheimerSignup, loading: authLoading } = useAuth();
@@ -187,21 +187,7 @@ export default function AlzheimerSetup() {
           }
       } else {
           // CASE B: Logged-in setup
-          const res = await fetch(`${BASE_URL}/alzheimer`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(details),
-          });
-
-          const data = await res.json();
-
-          if (!res.ok) {
-            throw new Error(data.message || "Failed to save profile");
-          }
-
+          await alzheimerAPI.profile.create(details, token);
           await refreshUser();
           router.replace("/home/alzheimerDashboard");
       }

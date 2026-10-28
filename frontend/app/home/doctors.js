@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+import { doctorAPI } from "../../services/api";
 
 export default function Doctors() {
   const router = useRouter();
@@ -44,8 +44,8 @@ export default function Doctors() {
 
   const fetchDoctors = async () => {
     try {
-      const res = await fetch(`${BASE_URL}/doctors`);
-      const json = await res.json();
+      const json = await doctorAPI.getAll();
+
       if (Array.isArray(json)) {
         setData(json);
       } else {
