@@ -1,8 +1,8 @@
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "192.168.1.36:5000/remedies";
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "10.248.204.110:5000/remedies";
 // ================= CONFIG =================
 
 // 🔥 PUT YOUR LOCAL IP HERE (IMPORTANT)
-const LOCAL_IP = "192.168.1.36"; // Updated to match Expo IP
+const LOCAL_IP = "10.248.204.110"; // Updated to match Expo IP
 
 const configuredBase = (process.env.EXPO_PUBLIC_API_URL || "").replace(/\/$/, "");
 
@@ -10,7 +10,7 @@ const configuredBase = (process.env.EXPO_PUBLIC_API_URL || "").replace(/\/$/, ""
 const API_BASE_CANDIDATES = [
     configuredBase,
     `http://${LOCAL_IP}:5000`,   // ✅ real device
-    "http://10.0.2.2:5000"      // ✅ Android emulator
+    "http://192.168.1.34:5000"      // ✅ Android emulator
 ].filter(Boolean);
 
 const API_ROOT = API_BASE_CANDIDATES[0] || "";

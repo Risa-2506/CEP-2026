@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
+import { Platform } from "react-native";
 import { Accelerometer } from "expo-sensors";
 import { useRouter } from "expo-router";
 import { useAuth } from "./AuthContext";
@@ -14,21 +15,33 @@ export function SensorProvider({ children }) {
   const stateRef = useRef("idle");
   const lastFreefallTime = useRef(0);
 
-  const startMonitoring = () => {
-    if (subscription.current) return;
+  const startMonitoring = async () => {
+    if (subscription.current || Platform.OS === "web") return;
 
-    Accelerometer.setUpdateInterval(100);
-    subscription.current = Accelerometer.addListener(data => {
-      const magnitude = Math.sqrt(data.x * data.x + data.y * data.y + data.z * data.z);
-      handleSensorData(magnitude);
-    });
-    setIsMonitoring(true);
-    console.log("🟢 Fall Detection Monitoring Started");
+    try {
+      const isAvailable = await Accelerometer.isAvailableAsync();
+      if (!isAvailable) {
+        console.log("⚠️ Accelerometer sensor is not available on this device.");
+        return;
+      }
+
+      Accelerometer.setUpdateInterval(100);
+      subscription.current = Accelerometer.addListener(data => {
+        const magnitude = Math.sqrt(data.x * data.x + data.y * data.y + data.z * data.z);
+        handleSensorData(magnitude);
+      });
+      setIsMonitoring(true);
+      console.log("🟢 Fall Detection Monitoring Started");
+    } catch (error) {
+      console.warn("Could not start Accelerometer monitoring:", error);
+    }
   };
 
   const stopMonitoring = () => {
     if (subscription.current) {
-      subscription.current.remove();
+      if (typeof subscription.current.remove === "function") {
+        subscription.current.remove();
+      }
       subscription.current = null;
     }
     setIsMonitoring(false);
