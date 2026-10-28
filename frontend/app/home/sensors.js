@@ -181,7 +181,7 @@ export default function Sensors() {
                  <Text style={styles.countdownText}>{countdown}s</Text>
                  
                  <TouchableOpacity style={styles.cancelBtn} onPress={overrideAlert}>
-                    <Text style={styles.cancelBtnText}>I'M OKAY (CANCEL)</Text>
+                    <Text style={styles.cancelBtnText}>I&apos;M OKAY (CANCEL)</Text>
                  </TouchableOpacity>
 
                  <TouchableOpacity style={styles.sosBtn} onPress={() => {

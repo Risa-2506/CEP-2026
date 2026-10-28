@@ -139,7 +139,7 @@ export default function Elderly() {
       {notes.length === 0 ? (
         <Card style={styles.emptyStateBox}>
           <Text style={styles.emptyStateTitle}>No notes yet</Text>
-          <Text style={styles.emptyStateText}>Your caregiver hasn't posted any notes for you yet.</Text>
+          <Text style={styles.emptyStateText}>Your caregiver hasn&apos;t posted any notes for you yet.</Text>
         </Card>
       ) : (
         notes.map((n) => (
@@ -796,69 +796,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 13
   },
-  storyModalBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(15, 23, 42, 0.45)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20
-  },
-  storyBox: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    padding: 20,
-    width: "100%",
-    maxHeight: "80%"
-  },
-  storyHeaderRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 15
-  },
-  closeBtn: {
-    backgroundColor: "#EFF6FF",
-    borderRadius: 999,
-    paddingVertical: 6,
-    paddingHorizontal: 12
-  },
-  closeBtnText: {
-    color: "#1D4ED8",
-    fontWeight: "700"
-  },
-  storyTitle: {
-    flex: 1,
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#0F172A"
-  },
-  storyContent: {
-    fontSize: 15,
-    lineHeight: 24,
-    color: "#334155"
-  },
-  storyScrollArea: {
-    flex: 1
-  },
-  moralPill: {
-    marginTop: 20,
-    backgroundColor: "#F0F9FF",
-    borderRadius: 14,
-    padding: 14,
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.primary
-  },
-  moralLabel: {
-    color: COLORS.primary,
-    fontWeight: "700",
-    fontSize: 12,
-    textTransform: "uppercase",
-    marginBottom: 4
-  },
-  moralText: {
-    color: "#1E40AF",
-    fontWeight: "600"
-  },
+
   statusPill: {
     paddingHorizontal: 12,
     paddingVertical: 4,
